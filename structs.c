@@ -34,6 +34,6 @@ struct DE {
  time_t timeModified; 
  int size;
  int isDirectory; 
- int location
+ int location;
  char name[225];
 };
