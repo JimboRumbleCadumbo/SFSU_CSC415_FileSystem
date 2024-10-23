@@ -6,7 +6,7 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: structs.c
+* File:: structs.h
 *
 * Description:: all the structures here
 *
