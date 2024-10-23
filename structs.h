@@ -22,20 +22,23 @@
 #include <fcntl.h>
 #include <time.h>
 
-struct VCB{
+typedef struct VCB {
     int signature; // Signature
     int numBlocks; // number of blocks in the filesystem
     int blockSize; // size of the blocks
     int tableLoc; // location of the FAT table
     int rootLoc; // location of the root directory
-};
+} VCB;
 
-struct DE {
+typedef struct DE {
  time_t timeCreated; 
  time_t timeModified; 
  int size;
  int isDirectory; 
  int location;
  char name[225];
-};
+} DE;
+
+// global VCB variable
+extern VCB vcb;
 #endif
