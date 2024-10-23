@@ -11,7 +11,8 @@
 * Description:: all the structures here
 *
 **************************************************************/
-
+#ifndef STRUCTS_H
+#define STRUCTS_H
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>	
@@ -37,3 +38,4 @@ struct DE {
  int location;
  char name[225];
 };
+#endif
