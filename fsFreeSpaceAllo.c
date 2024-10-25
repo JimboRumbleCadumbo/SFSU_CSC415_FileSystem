@@ -14,7 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
-#include "initialize_free_space.c"
+#include "fsFreeSpace.c"
 
 // Function to allocate the FAT
 int allocateBlock(){
