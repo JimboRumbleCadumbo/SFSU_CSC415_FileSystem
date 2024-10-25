@@ -33,6 +33,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	int usrSignature = 0x0000AAAA;
 
 	VCB *vcbPoint = malloc(blockSize);
+
 	LBAread(vcbPoint, 1, 0);
 
 	if (vcbPoint == NULL) {
@@ -40,13 +41,13 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		return -1; // Handle error appropriately
 	}
 	
-	 if(vcbPoint->signature != usrSignature){
+	if(vcbPoint->signature != usrSignature){
 		vcbPoint->signature = usrSignature;
 		vcbPoint->numBlocks = numberOfBlocks;
 		vcbPoint->blockSize = blockSize;
-	// 	// vcbPoint->tableLoc = ;	
-	// 	// vcbPoint->rootLoc = ;
-	 }
+		// vcbPoint->tableLoc = ;	
+		// vcbPoint->rootLoc = ;
+	}
 	
 	// ------ For Testing Purposes ------ //
 	printf("\n\nAFTER Null check\n\n");
