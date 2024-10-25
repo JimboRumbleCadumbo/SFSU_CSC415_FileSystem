@@ -1,4 +1,16 @@
-// By: Rishita Meharishi
+/**************************************************************
+* Class::  CSC-415-03 Fall 2024
+* Name:: Yu-Ming Chen, Ria Thakker, Yuquan Xu, Rishita Meharishi 	
+* Student IDs:: 923313947, 922593253, 920390312, 922249026
+* GitHub-Name:: JimboRumbleCadumbo, riathakker, yyyuquan, Rishita317 
+* Group-Name:: Bytes Busters
+* Project:: Basic File System
+*
+* File:: fsFreeSpace.c
+*
+* Description:: Stuffs related to initializing the freespace
+*
+**************************************************************/
 
 // VCB is a global variable 
 
@@ -8,7 +20,9 @@
 #define BLOCK_SIZE 512
 #define TOTAL_BLOCKS 19531
 #define FAT_ENTRIES (TOTAL_BLOCKS)
-#define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) // Calculate number of blocks needed for FAT
+// Calculate number of blocks needed for FAT
+#define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) 
+
 
 // Function to initialize the FAT
 int initializeFAT() {
