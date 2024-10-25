@@ -55,6 +55,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("\nnumBlocks: %d\n", vcbPoint->numBlocks);
 	printf("\nblockSize: %d\n", vcbPoint->blockSize);
 
+	LBAwrite(vcbPoint, 1, 0);
+
 	return 0;
 	}
 	
