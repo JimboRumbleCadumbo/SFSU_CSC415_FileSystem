@@ -1,31 +1,39 @@
+// By: Rishita Meharishi
+
 #include <stdlib.h>
 #include <string.h>
 
 #define BLOCK_SIZE 512
 #define TOTAL_BLOCKS 19531
-#define FREE_SPACE_BLOCKS 5
+#define FAT_ENTRIES (TOTAL_BLOCKS)
+#define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) // Calculate number of blocks needed for FAT
 
-// Function to initialize the free space map
-int initializeFreeSpace() {
-    // Allocate memory for the free space map
-    unsigned char *freeSpaceMap = (unsigned char *)malloc(FREE_SPACE_BLOCKS * BLOCK_SIZE);
-    if (freeSpaceMap == NULL) {
+// Function to initialize the FAT
+int initializeFAT() {
+    // Allocate memory for the FAT
+    int *fat = (int *)malloc(FAT_BLOCKS * BLOCK_SIZE);
+    if (fat == NULL) {
         return -1; // Memory allocation failed
     }
 
-    // Initialize the free space map
-    memset(freeSpaceMap, 0xFF, FREE_SPACE_BLOCKS * BLOCK_SIZE); // Set all bits to 1 (used)
-    freeSpaceMap[0] = 0xFC; // First 6 bits used (VCB and free space map itself)
+    // Initialize the FAT
+    for (int i = 0; i < FAT_ENTRIES; i++) {
+        if (i < 6) {
+            fat[i] = -1; // Mark first 6 entries as used (VCB and FAT itself)
+        } else {
+            fat[i] = 0; // Mark the rest as free
+        }
+    }
 
-    // Write the free space map to disk
-    if (LBAwrite(freeSpaceMap, FREE_SPACE_BLOCKS, 1) != FREE_SPACE_BLOCKS) {
-        free(freeSpaceMap);
+    // Write the FAT to disk
+    if (LBAwrite(fat, FAT_BLOCKS, 1) != FAT_BLOCKS) {
+        free(fat);
         return -1; // Write failed
     }
 
     // Free the allocated memory
-    free(freeSpaceMap);
+    free(fat);
 
-    // Return the starting block number of the free space map
-    return 1; // Free space map starts at block 1
+    // Return the starting block number of the FAT
+    return 1; // FAT starts at block 1
 }
