@@ -1,5 +1,7 @@
 // By: Rishita Meharishi
 
+// VCB is a global variable 
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,14 +18,21 @@ int initializeFAT() {
         return -1; // Memory allocation failed
     }
 
+//  // link everything together 0 by itself and then block 1-2, 3-4 etc 
+// and thats how the total is FAT i is i+1 
+// last block 156 should be null or so we know its the end. // 0 is the VCB
+
     // Initialize the FAT
     for (int i = 0; i < FAT_ENTRIES; i++) {
-        if (i < 6) {
-            fat[i] = -1; // Mark first 6 entries as used (VCB and FAT itself)
+        if (i == 0) {
+            fat[i] = -1; // VCB is by itself
+        } else if (i < 155) {
+            fat[i] = i + 1; // Link the blocks together
         } else {
             fat[i] = 0; // Mark the rest as free
         }
     }
+    fat[155] = -1; // Mark the last block (156) as the end
 
     // Write the FAT to disk
     if (LBAwrite(fat, FAT_BLOCKS, 1) != FAT_BLOCKS) {
