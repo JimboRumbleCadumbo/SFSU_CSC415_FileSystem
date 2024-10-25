@@ -43,7 +43,8 @@ CFLAGS= -g -I.
 LIBS =pthread
 DEPS = 
 # Add any additional objects to this list
-ADDOBJ= fsInit.o fsFreeSpace.h
+ADDOBJ= fsInit.o fsFreeSpace.o fsInitDir.o
+>>>>>>> db107f3 (Root directory initialized)
 ARCH = $(shell uname -m)
 
 ifeq ($(ARCH), aarch64)
