@@ -29,6 +29,30 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
+	
+	int usrSignature = 0x0000AAAA;
+
+	VCB *vcbPoint = malloc(blockSize);
+	LBAread(vcbPoint, 1, 0);
+
+	if (vcbPoint == NULL) {
+		fprintf(stderr, "Error: LBAread returned NULL\n");
+		return -1; // Handle error appropriately
+	}
+	
+	 if(vcbPoint->signature != usrSignature){
+		vcbPoint->signature = usrSignature;
+		vcbPoint->numBlocks = numberOfBlocks;
+		vcbPoint->blockSize = blockSize;
+	// 	// vcbPoint->tableLoc = ;	
+	// 	// vcbPoint->rootLoc = ;
+	 }
+	
+	// ------ For Testing Purposes ------ //
+	printf("\n\nAFTER Null check\n\n");
+	printf("\nsignature: %d\n", vcbPoint->signature);
+	printf("\nnumBlocks: %d\n", vcbPoint->numBlocks);
+	printf("\nblockSize: %d\n", vcbPoint->blockSize);
 
 	return 0;
 	}
