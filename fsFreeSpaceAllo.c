@@ -14,16 +14,43 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
+#include <structs.h>
 #include "fsFreeSpace.c"
+#include "fsInit.c"
 
-// Function to allocate the FAT
-int allocateBlock(){
-    int FAT[TOTAL_BLOCKS]; // Initialize the FAT
-    for (int i = 0; i < TOTAL_BLOCKS; i++) {
-        if (FAT[i] == 0) { // Check if the block is free
-            FAT[i] = 1; // Mark the block as allocated
-            return i; // Return the index of the allocated block
+extern int *fat;
+extern VCB vcb;
+
+int allocateBlocks(int numBlocks) {
+
+    printf("Allocating %d blocks...\n", numBlocks);
+
+    int currentBlock = vcb.tableLoc;
+    int startBlock = currentBlock;
+
+    printf("vcb.tableLoc = %d, vcb.numBlocks = %d\n", vcb.tableLoc, vcb.numBlocks);
+
+
+    if (vcb.numBlocks < numBlocks) {
+        printf("Not enough free space. Required: %d, Available: %d\n", numBlocks, vcb.numBlocks);
+        return END_OF_CHAIN;
+    }
+
+    for (int i = 0; i < numBlocks; i++) {
+        int nextFreeBlock = fat[currentBlock];
+        
+        if (i == numBlocks - 1) {
+            fat[currentBlock] = END_OF_CHAIN;
+            vcb.tableLoc = nextFreeBlock;
+        } else {
+            fat[currentBlock] = nextFreeBlock;
+            currentBlock = nextFreeBlock;
         }
     }
-    return -1;
+
+    vcb.numBlocks -= numBlocks;
+    printf("Total free blocks after allocation: %d\n", vcb.numBlocks);
+
+    printf("Done. Start block of the allocated chain: %d\n", startBlock);
+    return startBlock;
 }
