@@ -28,6 +28,7 @@ typedef struct VCB {
     int blockSize; // size of the blocks
     int tableLoc; // location of the FAT table
     int rootLoc; // location of the root directory
+    int freeSpaceLoc // the first index of free space
 } VCB;
 
 typedef struct DE {
