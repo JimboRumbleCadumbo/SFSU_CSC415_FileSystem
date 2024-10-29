@@ -22,6 +22,7 @@
 #define FAT_ENTRIES (TOTAL_BLOCKS)
 // Calculate number of blocks needed for FAT
 #define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) 
+#define END_OF_CHAIN 0xFFFFFFFF
 
 
 // Function to initialize the FAT
@@ -43,11 +44,12 @@ int initializeFAT() {
         } else if (i < 155) {
             fat[i] = i + 1; // Link the blocks together
         } else {
-            fat[i] = 0; // Mark the rest as free
+            fat[i] = i + 1; // Mark the rest as free
         }
     }
-    fat[155] = -1; // Mark the last block (156) as the end
-
+    fat[155] = END_OF_CHAIN; // Mark the last block (156) as the end
+    fat[FAT_ENTRIES-1] = END_OF_CHAIN;
+    
     // Write the FAT to disk
     if (LBAwrite(fat, FAT_BLOCKS, 1) != FAT_BLOCKS) {
         free(fat);

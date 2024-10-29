@@ -32,12 +32,12 @@ typedef struct VCB {
 } VCB;
 
 typedef struct DE {
- time_t timeCreated; 
- time_t timeModified; 
- int size;
- int isDirectory; 
- int location;
- char name[225];
+    time_t timeCreated; 
+    time_t timeModified; 
+    int size;
+    int isDirectory; 
+    int location;
+    char name[225];
 } DE;
 
 // global VCB variable
