@@ -26,7 +26,7 @@ typedef struct VCB {
     int signature; // Signature
     int numBlocks; // number of blocks in the filesystem
     int blockSize; // size of the blocks
-    int tableLoc; // location of the FAT table
+    int tableLoc; // location of the first block of the FAT table
     int rootLoc; // location of the root directory
     int freeSpaceLoc // the first index of free space
 } VCB;

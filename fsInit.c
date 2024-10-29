@@ -21,9 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fsLow.h"
 #include "mfs.h"
+#include "fsLow.h"
 #include "structs.h"
+#include "fsFreeSpace.c"
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -48,13 +49,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		vcbPoint->signature = usrSignature;
 		vcbPoint->numBlocks = numberOfBlocks;
 		vcbPoint->blockSize = blockSize;
-		// vcbPoint->tableLoc = ;	
+		vcbPoint->tableLoc = initializeFAT();	
 		// vcbPoint->rootLoc = ;
 
 		// ------ For Testing Purposes ------ //
 		printf("\nsignature: %d\n", vcbPoint->signature);
 		printf("\nnumBlocks: %d\n", vcbPoint->numBlocks);
 		printf("\nblockSize: %d\n", vcbPoint->blockSize);
+		printf("\ntableLoc: %d\n", vcbPoint->tableLoc);
+		// printf("\nrootLoc: %d\n", vcbPoint->rootLoc);
 		// ---------------------------------- //
 
 		LBAwrite(vcbPoint, 1, 0);
@@ -63,8 +66,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	else{ // Retrive data that is already in disk
 
 		printf("\n\nThe disk was already initialized...Reading table & rootDir from disk... \n\n");
-		
-		// ** Need to grab the whole table here
 
 		// ** Need to grab the location of the root directory here
 
