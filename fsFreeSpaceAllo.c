@@ -14,13 +14,14 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
-#include <structs.h>
+#include "structs.h"
 #include "fsFreeSpace.c"
 #include "fsInit.c"
 
 extern int *fat;
 extern VCB vcb;
 
+// Allocate a chain of blocks
 int allocateBlocks(int numBlocks) {
 
     printf("Allocating %d blocks...\n", numBlocks);
@@ -53,4 +54,28 @@ int allocateBlocks(int numBlocks) {
 
     printf("Done. Start block of the allocated chain: %d\n", startBlock);
     return startBlock;
+}
+
+// Release a chain of blocks
+int releaseBlocks(int numToRelease, int startingBlock) {
+    printf("Releasing %d blocks starting from block %d...\n", numToRelease, startingBlock);
+
+    int currentLoc = startingBlock;
+
+    for (int i = 0; i < numToRelease; i++) {
+        int nextBlock = fat[currentLoc];
+        printf("Freeing block %d\n", currentLoc);
+
+        if (i == numToRelease - 1) {
+            fat[currentLoc] = vcb.tableLoc;
+            printf("Linking block %d to the start of free space at %d\n", currentLoc, vcb.tableLoc);
+        }
+        
+        currentLoc = nextBlock;
+    }
+
+    vcb.tableLoc = startingBlock;
+    printf("New start of free space: %d\n", vcb.tableLoc);
+
+    return vcb.tableLoc;
 }
