@@ -13,6 +13,7 @@
 **************************************************************/
 #include "structs.h"
 #include "fsLow.h"
+#include "fsReadWrite.c"
 
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries
@@ -50,11 +51,15 @@ DE * createDirectory(int numEntries, DE *parent) {
     newDir[1].isDirectory = 1;
     newDir[1].timeCreated = parent[0].timeCreated;
     newDir[1].timeModified = parent[0].timeModified;
-    writeDir(newDir);
+    if (writeDir(newDir) < 1) {
+        printf("Error writing directory");
+        return NULL;
+    }
     return newDir;
 }
 
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb.blockSize - 1))/vcb.blockSize;
-    LBAwrite(dir, blocks, dir[0].location);
+    int blocksWritten = discontinuousWrite(dir->location, dir);
+    return blocksWritten;
 }

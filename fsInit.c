@@ -77,5 +77,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	
 void exitFileSystem ()
 	{
-	printf ("System exiting\n");
+		free(fat);
+		printf ("System exiting\n");
 	}

@@ -24,11 +24,12 @@
 #define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) 
 #define END_OF_CHAIN 0xFFFFFFFF
 
+extern int *fat;
 
 // Function to initialize the FAT
 int initializeFAT() {
     // Allocate memory for the FAT
-    int *fat = (int *)malloc(FAT_BLOCKS * BLOCK_SIZE);
+    fat = (int *)malloc(FAT_BLOCKS * BLOCK_SIZE);
     if (fat == NULL) {
         return -1; // Memory allocation failed
     }
@@ -51,14 +52,10 @@ int initializeFAT() {
     fat[FAT_ENTRIES-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (LBAwrite(fat, FAT_BLOCKS, 1) != FAT_BLOCKS) {
+    if (discontinuousWrite(1, fat) != FAT_BLOCKS) {
         free(fat);
         return -1; // Write failed
     }
-
-    // Free the allocated memory
-    free(fat);
-
     // Return the starting block number of the FAT
     return 1; // FAT starts at block 1
 }
