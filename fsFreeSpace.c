@@ -52,6 +52,7 @@ int initializeFAT(int blockSize, int numBlocks) {
     }
     printf("Went through chaining process\n");
     fat[totalBlocks] = END_OF_CHAIN; // Mark the last block (156) as the end
+    vcb->freeSpaceLoc = fat[totalBlocks + 1];
     fat[numBlocks-1] = END_OF_CHAIN;
     
     // Write the FAT to disk

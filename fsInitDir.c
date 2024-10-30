@@ -28,6 +28,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     }
     // get a location on the FAT for the file
     int location = allocateBlocks(blocksNeeded);
+    printf("Location of root directory: %d\n", location);
     int actualEntries = actualBytes / sizeof(DE);
     // Set everything but . and .. entries as unused
     for (int i = 2; i < numEntries; i++) {
@@ -44,6 +45,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     // Initialize .. as the parent entry or as itself in root case
     if (parent == NULL) { // Null passed in if creating root directory
         parent = newDir; // Set parent as itself
+        vcb->rootLoc = location;
     }
     strcpy(newDir[1].name, "..");
     newDir[1].location = parent[0].location;
@@ -52,7 +54,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     newDir[1].timeCreated = parent[0].timeCreated;
     newDir[1].timeModified = parent[0].timeModified;
     if (writeDir(newDir) < 1) {
-        printf("Error writing directory");
+        printf("Error writing directory\n");
         return NULL;
     }
     return newDir;

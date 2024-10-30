@@ -57,14 +57,15 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb->blockSize = blockSize;
 		printf("Initializing FAT\n");
 		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);	
-		// vcbPoint->rootLoc = ;
+		printf("Initializing Root Directory\n");
+		createDirectory(50, NULL);
 
 		// ------ For Testing Purposes ------ //
 		printf("\nsignature: %X\n", vcb->signature);
 		printf("\nnumBlocks: %d\n", vcb->numBlocks);
 		printf("\nblockSize: %d\n", vcb->blockSize);
 		printf("\ntableLoc: %d\n", vcb->tableLoc);
-		// printf("\nrootLoc: %d\n", vcbPoint->rootLoc);
+		printf("\nrootLoc: %d\n", vcb->rootLoc);
 		// ---------------------------------- //
 
 		LBAwrite(vcb, 1, 0);
