@@ -13,10 +13,6 @@
 *
 **************************************************************/
 
-#include "fsReadWrite.c"
-#include "fsFreeSpace.c"
-#include "fsFreeSpaceAllo.c"
-#include "fsInitDir.c"
 #include "structs.h"
 
 int allocateBlocks(int numBlocks);

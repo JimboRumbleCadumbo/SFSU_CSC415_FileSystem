@@ -14,12 +14,8 @@
 
 #include <stdio.h>
 #include <stdlib.h> 
-#include "structs.h"
-#include "fsFreeSpace.c"
-#include "fsInit.c"
+#include "functions.h"
 
-extern int *fat;
-extern VCB vcb;
 
 // Allocate a chain of blocks
 int allocateBlocks(int numBlocks) {

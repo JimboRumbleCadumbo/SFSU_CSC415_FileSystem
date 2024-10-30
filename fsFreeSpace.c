@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "functions.h"
 
 #define BLOCK_SIZE 512
 #define TOTAL_BLOCKS 19531
@@ -52,8 +53,9 @@ int initializeFAT() {
     fat[FAT_ENTRIES-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (discontinuousWrite(1, fat) != FAT_BLOCKS) {
+    if (discontinuousWrite(1, (void *)fat) != FAT_BLOCKS) {
         free(fat);
+        fat = NULL;
         return -1; // Write failed
     }
     // Return the starting block number of the FAT

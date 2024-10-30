@@ -12,19 +12,18 @@
 * read and write 
 *
 **************************************************************/
+#include "functions.h"
 #include "fsLow.h"
-#include "structs.h"
-#include "fsFreeSpace.c"
 
 int discontinuousWrite(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesWritten = 0;
     while (fat[currentBlock] != 0xFFFFFFF) {
-        LBAWrite(buffer + bytesWritten, 1, currentBlock);
+        LBAwrite(buffer + bytesWritten, 1, currentBlock);
         bytesWritten += vcb.blockSize;
         currentBlock = fat[currentBlock];
     }
-    int blocksWritten = LBAWrite(buffer + bytesWritten, 1, currentBlock);
+    int blocksWritten = LBAwrite(buffer + bytesWritten, 1, currentBlock);
     return blocksWritten;
 }
 
@@ -32,10 +31,10 @@ int discontinuousRead(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesRead = 0;
     while (fat[currentBlock] != 0xFFFFFFFF) {
-        LBARead(buffer + bytesRead, 1, currentBlock);
+        LBAread(buffer + bytesRead, 1, currentBlock);
         bytesRead += vcb.blockSize;
         currentBlock = fat[currentBlock];
     }
-    int blocksRead = LBARead(buffer + bytesRead, 1, currentBlock);
+    int blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
     return blocksRead;
 }

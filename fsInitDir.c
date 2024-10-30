@@ -11,9 +11,9 @@
 * Description:: all functions related to directories
 *
 **************************************************************/
-#include "structs.h"
+#include <time.h>
+#include "functions.h"
 #include "fsLow.h"
-#include "fsReadWrite.c"
 
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries
@@ -27,7 +27,7 @@ DE * createDirectory(int numEntries, DE *parent) {
         return NULL;
     }
     // get a location on the FAT for the file
-    int location = allocateBlocks(blocksNeeded, blocksNeeded);
+    int location = allocateBlocks(blocksNeeded);
     int actualEntries = actualBytes / sizeof(DE);
     // Set everything but . and .. entries as unused
     for (int i = 2; i < numEntries; i++) {
@@ -38,7 +38,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     newDir[0].location = location;
     newDir[0].size = actualBytes;
     newDir[0].isDirectory = 1;
-    time_t current = time;
+    time_t current = (time_t)time;
     newDir[0].timeCreated = current;
     newDir[0].timeModified = current;
     // Initialize .. as the parent entry or as itself in root case
@@ -60,6 +60,6 @@ DE * createDirectory(int numEntries, DE *parent) {
 
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb.blockSize - 1))/vcb.blockSize;
-    int blocksWritten = discontinuousWrite(dir->location, dir);
+    int blocksWritten = discontinuousWrite(dir->location, (void *)dir);
     return blocksWritten;
 }

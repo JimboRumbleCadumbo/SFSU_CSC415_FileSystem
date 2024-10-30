@@ -23,8 +23,8 @@
 
 #include "mfs.h"
 #include "fsLow.h"
-#include "structs.h"
-#include "fsFreeSpace.c"
+#include "functions.h"
+
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
