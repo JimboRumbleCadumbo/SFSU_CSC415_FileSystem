@@ -28,6 +28,7 @@
 
 VCB *vcb = NULL;
 int *fat = NULL;
+DE *root = NULL;
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -58,7 +59,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		printf("Initializing FAT\n");
 		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);	
 		printf("Initializing Root Directory\n");
-		createDirectory(50, NULL);
+		root = createDirectory(50, NULL);
 
 		// ------ For Testing Purposes ------ //
 		printf("\nsignature: %X\n", vcb->signature);
@@ -85,7 +86,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	
 void exitFileSystem()
 	{
+		free(vcb);
+		vcb = NULL;
 		free(fat);
 		fat = NULL;
+		free(root);
+		root = NULL;
 		printf ("System exiting\n");
 	}
