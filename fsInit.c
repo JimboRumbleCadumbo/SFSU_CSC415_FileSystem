@@ -33,11 +33,11 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	
 	int usrSignature = 0x1234ABCD;
 
-	VCB *vcbPoint = malloc(blockSize);
+	vcb = malloc(blockSize);
 
-	LBAread(vcbPoint, 1, 0);
+	LBAread(vcb, 1, 0);
 
-	if (vcbPoint == NULL) {
+	if (vcb == NULL) {
 		fprintf(stderr, "Error: LBAread returned NULL\n");
 		return -1; // Handle error appropriate
 	}
@@ -45,22 +45,22 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	printf("\n\nAFTER Null check\n\n");
 
 	// If the signature doesn't match or does not exist, format the VCB
-	if(vcbPoint->signature != usrSignature){
-		vcbPoint->signature = usrSignature;
-		vcbPoint->numBlocks = numberOfBlocks;
-		vcbPoint->blockSize = blockSize;
-		vcbPoint->tableLoc = initializeFAT();	
+	if(vcb->signature != usrSignature){
+		vcb->signature = usrSignature;
+		vcb->numBlocks = numberOfBlocks;
+		vcb->blockSize = blockSize;
+		vcb->tableLoc = initializeFAT();	
 		// vcbPoint->rootLoc = ;
 
 		// ------ For Testing Purposes ------ //
-		printf("\nsignature: %d\n", vcbPoint->signature);
-		printf("\nnumBlocks: %d\n", vcbPoint->numBlocks);
-		printf("\nblockSize: %d\n", vcbPoint->blockSize);
-		printf("\ntableLoc: %d\n", vcbPoint->tableLoc);
+		printf("\nsignature: %d\n", vcb->signature);
+		printf("\nnumBlocks: %d\n", vcb->numBlocks);
+		printf("\nblockSize: %d\n", vcb->blockSize);
+		printf("\ntableLoc: %d\n", vcb->tableLoc);
 		// printf("\nrootLoc: %d\n", vcbPoint->rootLoc);
 		// ---------------------------------- //
 
-		LBAwrite(vcbPoint, 1, 0);
+		LBAwrite(vcb, 1, 0);
 		printf("\n\nDisk Initialized... \n\n");
 	}
 	else{ // Retrive data that is already in disk

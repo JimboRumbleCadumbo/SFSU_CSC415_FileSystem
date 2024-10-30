@@ -15,21 +15,21 @@
 #include <stdio.h>
 #include <stdlib.h> 
 #include "functions.h"
-
+#define END_OF_CHAIN 0xFFFFFFFF
 
 // Allocate a chain of blocks
 int allocateBlocks(int numBlocks) {
 
     printf("Allocating %d blocks...\n", numBlocks);
 
-    int currentBlock = vcb.tableLoc;
+    int currentBlock = vcb->tableLoc;
     int startBlock = currentBlock;
 
-    printf("vcb.tableLoc = %d, vcb.numBlocks = %d\n", vcb.tableLoc, vcb.numBlocks);
+    printf("vcb->tableLoc = %d, vcb->numBlocks = %d\n", vcb->tableLoc, vcb->numBlocks);
 
 
-    if (vcb.numBlocks < numBlocks) {
-        printf("Not enough free space. Required: %d, Available: %d\n", numBlocks, vcb.numBlocks);
+    if (vcb->numBlocks < numBlocks) {
+        printf("Not enough free space. Required: %d, Available: %d\n", numBlocks, vcb->numBlocks);
         return END_OF_CHAIN;
     }
 
@@ -38,15 +38,15 @@ int allocateBlocks(int numBlocks) {
         
         if (i == numBlocks - 1) {
             fat[currentBlock] = END_OF_CHAIN;
-            vcb.tableLoc = nextFreeBlock;
+            vcb->tableLoc = nextFreeBlock;
         } else {
             fat[currentBlock] = nextFreeBlock;
             currentBlock = nextFreeBlock;
         }
     }
 
-    vcb.numBlocks -= numBlocks;
-    printf("Total free blocks after allocation: %d\n", vcb.numBlocks);
+    vcb->numBlocks -= numBlocks;
+    printf("Total free blocks after allocation: %d\n", vcb->numBlocks);
 
     printf("Done. Start block of the allocated chain: %d\n", startBlock);
     return startBlock;
@@ -63,15 +63,15 @@ int releaseBlocks(int numToRelease, int startingBlock) {
         printf("Freeing block %d\n", currentLoc);
 
         if (i == numToRelease - 1) {
-            fat[currentLoc] = vcb.tableLoc;
-            printf("Linking block %d to the start of free space at %d\n", currentLoc, vcb.tableLoc);
+            fat[currentLoc] = vcb->tableLoc;
+            printf("Linking block %d to the start of free space at %d\n", currentLoc, vcb->tableLoc);
         }
         
         currentLoc = nextBlock;
     }
 
-    vcb.tableLoc = startingBlock;
-    printf("New start of free space: %d\n", vcb.tableLoc);
+    vcb->tableLoc = startingBlock;
+    printf("New start of free space: %d\n", vcb->tableLoc);
 
-    return vcb.tableLoc;
+    return vcb->tableLoc;
 }

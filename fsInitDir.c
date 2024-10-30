@@ -18,8 +18,8 @@
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries
     int bytesNeeded = numEntries * sizeof(DE);
-    int blocksNeeded = (bytesNeeded + (vcb.blockSize - 1))/vcb.blockSize;
-    int actualBytes = blocksNeeded * vcb.blockSize;
+    int blocksNeeded = (bytesNeeded + (vcb->blockSize - 1))/vcb->blockSize;
+    int actualBytes = blocksNeeded * vcb->blockSize;
     DE *newDir;
     newDir = (DE *)malloc(actualBytes);
     if (newDir == NULL) {
@@ -59,7 +59,7 @@ DE * createDirectory(int numEntries, DE *parent) {
 }
 
 int writeDir(DE *dir) {
-    int blocks = (dir[0].size + (vcb.blockSize - 1))/vcb.blockSize;
+    int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
     int blocksWritten = discontinuousWrite(dir->location, (void *)dir);
     return blocksWritten;
 }

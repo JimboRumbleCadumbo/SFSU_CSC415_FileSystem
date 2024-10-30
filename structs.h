@@ -41,6 +41,6 @@ typedef struct DE {
 } DE;
 
 // global VCB variable
-extern VCB vcb;
+extern VCB *vcb;
 extern int *fat;
 #endif

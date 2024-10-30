@@ -20,7 +20,7 @@ int discontinuousWrite(int startingBlock, void *buffer) {
     int bytesWritten = 0;
     while (fat[currentBlock] != 0xFFFFFFF) {
         LBAwrite(buffer + bytesWritten, 1, currentBlock);
-        bytesWritten += vcb.blockSize;
+        bytesWritten += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
     int blocksWritten = LBAwrite(buffer + bytesWritten, 1, currentBlock);
@@ -32,7 +32,7 @@ int discontinuousRead(int startingBlock, void *buffer) {
     int bytesRead = 0;
     while (fat[currentBlock] != 0xFFFFFFFF) {
         LBAread(buffer + bytesRead, 1, currentBlock);
-        bytesRead += vcb.blockSize;
+        bytesRead += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
     int blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
