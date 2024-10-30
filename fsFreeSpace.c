@@ -22,17 +22,14 @@
 #include <string.h>
 #include "functions.h"
 
-#define BLOCK_SIZE 512
-#define TOTAL_BLOCKS 19531
-#define FAT_ENTRIES (TOTAL_BLOCKS)
-// Calculate number of blocks needed for FAT
-#define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) 
 #define END_OF_CHAIN 0xFFFFFFFF
 
 // Function to initialize the FAT
-int initializeFAT() {
+int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT
-    fat = (int *)malloc(FAT_BLOCKS * BLOCK_SIZE);
+    int totalBlocks = (numBlocks * sizeof(int)) + (blockSize - 1)/blockSize;
+    int totalBytes = totalBlocks * blockSize;
+    fat = (int *)malloc(totalBytes);
     if (fat == NULL) {
         return -1; // Memory allocation failed
     }
@@ -42,7 +39,7 @@ int initializeFAT() {
 // last block 156 should be null or so we know its the end. // 0 is the VCB
 
     // Initialize the FAT
-    for (int i = 0; i < FAT_ENTRIES; i++) {
+    for (int i = 0; i < numBlocks; i++) {
         if (i == 0) {
             fat[i] = -1; // VCB is by itself
         } else if (i < 155) {
@@ -52,10 +49,10 @@ int initializeFAT() {
         }
     }
     fat[155] = END_OF_CHAIN; // Mark the last block (156) as the end
-    fat[FAT_ENTRIES-1] = END_OF_CHAIN;
+    fat[numBlocks-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (discontinuousWrite(1, (void *)fat) != FAT_BLOCKS) {
+    if (discontinuousWrite(1, fat) != numBlocks) {
         free(fat);
         return -1; // Write failed
     }

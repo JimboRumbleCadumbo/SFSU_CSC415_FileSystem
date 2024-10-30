@@ -60,6 +60,6 @@ DE * createDirectory(int numEntries, DE *parent) {
 
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
-    int blocksWritten = discontinuousWrite(dir->location, (void *)dir);
+    int blocksWritten = discontinuousWrite(dir->location, dir);
     return blocksWritten;
 }
