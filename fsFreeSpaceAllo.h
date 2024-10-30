@@ -1,0 +1,1 @@
+int allocateBlocks(int numBlocks);

@@ -11,9 +11,7 @@
 * Description:: all functions related to directories
 *
 **************************************************************/
-#include <time.h>
-#include "functions.h"
-#include "fsLow.h"
+#include "fsInitDir.h"
 
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries

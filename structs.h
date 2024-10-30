@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+#define END_OF_CHAIN 0xFFFFFFFF
 
 typedef struct VCB {
     int signature; // Signature

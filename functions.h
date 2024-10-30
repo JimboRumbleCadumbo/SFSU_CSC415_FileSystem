@@ -14,13 +14,12 @@
 **************************************************************/
 
 #include "structs.h"
-#define END_OF_CHAIN 0xFFFFFFFF
 
-int allocateBlocks(int numBlocks);
+
+
 int releaseBlocks(int numToRelease, int startingBlock);
 int discontinuousWrite(int startingBlock, void *buffer);
 int discontinuousRead(int startingBlock, void *buffer);
 int initializeFAT();
-DE * createDirectory(int numEntries, DE *parent);
-int writeDir(DE *dir);
+
 
