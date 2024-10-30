@@ -16,20 +16,16 @@
 #include "fsReadWrite.h"
 
 int discontinuousWrite(int startingBlock, void *buffer) {
-    printf("Starting block is %d\n", startingBlock);
     int currentBlock = startingBlock;
     int bytesWritten = 0;
     while (fat[currentBlock] != END_OF_CHAIN) {
-        printf("Writing block %d to disk.\n", currentBlock);
         LBAwrite(buffer + bytesWritten, 1, currentBlock);
         bytesWritten += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
-    printf("Writing block %d to disk.\n", currentBlock);
     LBAwrite(buffer + bytesWritten, 1, currentBlock);
     bytesWritten += vcb->blockSize;
     int blocksWritten = (bytesWritten / vcb->blockSize);
-    printf("Returning %d\n", blocksWritten);
     return blocksWritten;
 }
 

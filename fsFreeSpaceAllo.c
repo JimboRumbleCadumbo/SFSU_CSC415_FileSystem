@@ -31,6 +31,11 @@ int allocateBlocks(int numBlocks) {
         return END_OF_CHAIN;
     }
 
+    if (fat[vcb->freeSpaceLoc] == END_OF_CHAIN) {
+        printf("No more disc space.\n");
+        return END_OF_CHAIN;
+    }
+
     for (int i = 0; i < numBlocks; i++) {
         int nextFreeBlock = fat[currentBlock];
         

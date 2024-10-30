@@ -22,14 +22,11 @@
 // Function to initialize the FAT
 int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT
-    printf("Malloc for FAT\n");
     int totalBlocks = ((numBlocks * sizeof(int)) + (blockSize - 1))/blockSize;
     totalBlocks++;
     int totalBytes = totalBlocks * blockSize;
     fat = (int *)malloc(totalBytes);
-    printf("Check if malloc for FAT failed\n");
     if (fat == NULL) {
-        printf("Check if malloc for FAT failed\n");
         return -1; // Memory allocation failed
     }
 
@@ -47,14 +44,11 @@ int initializeFAT(int blockSize, int numBlocks) {
             fat[i] = i + 1; // Mark the rest as free
         }
     }
-    printf("Went through chaining process\n");
     fat[totalBlocks] = END_OF_CHAIN; // Mark the last block (156) as the end
-    vcb->freeSpaceLoc = fat[totalBlocks + 1];
     fat[numBlocks-1] = END_OF_CHAIN;
+    vcb->freeSpaceLoc = fat[totalBlocks + 1];
     
     // Write the FAT to disk
-    printf("Writing FAT to disk\n");
-    printf("Total number of blocks is %d\n", totalBlocks);
     if (discontinuousWrite(1, fat) != totalBlocks) {
         printf("Writing failed");
         free(fat);
@@ -63,6 +57,5 @@ int initializeFAT(int blockSize, int numBlocks) {
         return -1; // Write failed
     }
     // Return the starting block number of the FAT
-    printf("Returning 1\n");
     return 1; // FAT starts at block 1
 }

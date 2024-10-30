@@ -46,19 +46,13 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		return -1; // Handle error appropriate
 	}
 	// ------ For Testing Purposes ------ //
-	printf("\n\nAFTER Null check\n\n");
 
 	// If the signature doesn't match or does not exist, format the VCB
 	if(vcb->signature != usrSignature){
-		printf("Assigning signature\n");
 		vcb->signature = usrSignature;
-		printf("Assigning numBlocks\n");
 		vcb->numBlocks = numberOfBlocks;
-		printf("Assigning blockSize\n");
 		vcb->blockSize = blockSize;
-		printf("Initializing FAT\n");
 		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);	
-		printf("Initializing Root Directory\n");
 		root = createDirectory(50, NULL);
 
 		// ------ For Testing Purposes ------ //
