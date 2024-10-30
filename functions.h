@@ -14,6 +14,7 @@
 **************************************************************/
 
 #include "structs.h"
+#define END_OF_CHAIN 0xFFFFFFFF
 
 int allocateBlocks(int numBlocks);
 int releaseBlocks(int numToRelease, int startingBlock);

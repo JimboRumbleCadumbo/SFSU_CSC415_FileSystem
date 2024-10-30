@@ -49,14 +49,18 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 	// If the signature doesn't match or does not exist, format the VCB
 	if(vcb->signature != usrSignature){
+		printf("Assigning signature\n");
 		vcb->signature = usrSignature;
+		printf("Assigning numBlocks\n");
 		vcb->numBlocks = numberOfBlocks;
+		printf("Assigning blockSize\n");
 		vcb->blockSize = blockSize;
-		vcb->tableLoc = initializeFAT();	
+		printf("Initializing FAT\n");
+		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);	
 		// vcbPoint->rootLoc = ;
 
 		// ------ For Testing Purposes ------ //
-		printf("\nsignature: %d\n", vcb->signature);
+		printf("\nsignature: %X\n", vcb->signature);
 		printf("\nnumBlocks: %d\n", vcb->numBlocks);
 		printf("\nblockSize: %d\n", vcb->blockSize);
 		printf("\ntableLoc: %d\n", vcb->tableLoc);
@@ -81,5 +85,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 void exitFileSystem()
 	{
 		free(fat);
+		fat = NULL;
 		printf ("System exiting\n");
 	}

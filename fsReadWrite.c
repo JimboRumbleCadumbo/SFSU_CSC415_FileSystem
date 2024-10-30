@@ -16,21 +16,27 @@
 #include "fsLow.h"
 
 int discontinuousWrite(int startingBlock, void *buffer) {
+    printf("Starting block is %d\n", startingBlock);
     int currentBlock = startingBlock;
     int bytesWritten = 0;
-    while (fat[currentBlock] != 0xFFFFFFF) {
+    while (fat[currentBlock] != END_OF_CHAIN) {
+        printf("Writing block %d to disk.\n", currentBlock);
         LBAwrite(buffer + bytesWritten, 1, currentBlock);
         bytesWritten += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
-    int blocksWritten = LBAwrite(buffer + bytesWritten, 1, currentBlock);
+    printf("Writing block %d to disk.\n", currentBlock);
+    LBAwrite(buffer + bytesWritten, 1, currentBlock);
+    bytesWritten += vcb->blockSize;
+    int blocksWritten = (bytesWritten / vcb->blockSize);
+    printf("Returning %d\n", blocksWritten);
     return blocksWritten;
 }
 
 int discontinuousRead(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesRead = 0;
-    while (fat[currentBlock] != 0xFFFFFFFF) {
+    while (fat[currentBlock] != END_OF_CHAIN) {
         LBAread(buffer + bytesRead, 1, currentBlock);
         bytesRead += vcb->blockSize;
         currentBlock = fat[currentBlock];

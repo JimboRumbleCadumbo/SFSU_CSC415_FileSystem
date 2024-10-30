@@ -22,15 +22,17 @@
 #include <string.h>
 #include "functions.h"
 
-#define END_OF_CHAIN 0xFFFFFFFF
-
 // Function to initialize the FAT
 int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT
-    int totalBlocks = (numBlocks * sizeof(int)) + (blockSize - 1)/blockSize;
+    printf("Malloc for FAT\n");
+    int totalBlocks = ((numBlocks * sizeof(int)) + (blockSize - 1))/blockSize;
+    totalBlocks++;
     int totalBytes = totalBlocks * blockSize;
     fat = (int *)malloc(totalBytes);
+    printf("Check if malloc for FAT failed\n");
     if (fat == NULL) {
+        printf("Check if malloc for FAT failed\n");
         return -1; // Memory allocation failed
     }
 
@@ -42,20 +44,27 @@ int initializeFAT(int blockSize, int numBlocks) {
     for (int i = 0; i < numBlocks; i++) {
         if (i == 0) {
             fat[i] = -1; // VCB is by itself
-        } else if (i < 155) {
+        } else if (i < totalBlocks) {
             fat[i] = i + 1; // Link the blocks together
         } else {
             fat[i] = i + 1; // Mark the rest as free
         }
     }
-    fat[155] = END_OF_CHAIN; // Mark the last block (156) as the end
+    printf("Went through chaining process\n");
+    fat[totalBlocks] = END_OF_CHAIN; // Mark the last block (156) as the end
     fat[numBlocks-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (discontinuousWrite(1, fat) != numBlocks) {
+    printf("Writing FAT to disk\n");
+    printf("Total number of blocks is %d\n", totalBlocks);
+    if (discontinuousWrite(1, fat) != totalBlocks) {
+        printf("Writing failed");
         free(fat);
+        fat = NULL;
+        printf("Freed FAT\n");
         return -1; // Write failed
     }
     // Return the starting block number of the FAT
+    printf("Returning 1\n");
     return 1; // FAT starts at block 1
 }
