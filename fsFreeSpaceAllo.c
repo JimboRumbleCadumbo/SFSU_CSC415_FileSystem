@@ -6,16 +6,14 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: fsallo.c
+* File:: fsFreeSpaceAllo.c
 *
-* Description:: Allocation for the FAT
+* Description:: Set of routine that help allocating free blocks for
+* the user to use.
 *
 **************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h> 
-#include "functions.h"
-#define END_OF_CHAIN 0xFFFFFFFF
+#include "fsFreeSpace.h"
 
 // Allocate a chain of blocks
 int allocateBlocks(int numBlocks) {

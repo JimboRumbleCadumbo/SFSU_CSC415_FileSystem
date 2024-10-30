@@ -9,19 +9,15 @@
 * File:: fsFreeSpace.c
 *
 * Description:: The file is essential for out filesystem project. 
-  The fsFreeSpace.c file is important for managing the
-  free space in the filesystem. It initializes the FAT, ensuring that 
-  blocks are correctly linked and marked, and writes this information to disk.
-  This setup is crucial for the efficient allocation and deallocation 
-  of blocks in the filesystem.
+* The fsFreeSpace.c file is important for managing the
+* free space in the filesystem. It initializes the FAT, ensuring that 
+* blocks are correctly linked and marked, and writes this information to disk.
+* This setup is crucial for the efficient allocation and deallocation 
+* of blocks in the filesystem.
 *
 **************************************************************/
 
-// VCB is a global variable 
-
-#include <stdlib.h>
-#include <string.h>
-#include "functions.h"
+#include "fsFreeSpace.h"
 
 // Function to initialize the FAT
 int initializeFAT(int blockSize, int numBlocks) {

@@ -8,11 +8,15 @@
 *
 * File:: structs.h
 *
-* Description:: all the structures here
+* Description:: Includes all the structures that the project will
+* need, which are the Volume Control Block (VCB) and the Directory
+* Entries (DE). Global variable initialized for easier access.
 *
 **************************************************************/
+
 #ifndef STRUCTS_H
 #define STRUCTS_H
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>	
@@ -21,6 +25,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
+
 #define END_OF_CHAIN 0xFFFFFFFF
 
 typedef struct VCB {

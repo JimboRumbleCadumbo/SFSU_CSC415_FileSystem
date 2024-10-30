@@ -6,11 +6,12 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: structs.h
+* File:: fsInitDir.c
 *
-* Description:: all functions related to directories
+* Description:: Functions that are used relating to the directory.
 *
 **************************************************************/
+
 #include "fsInitDir.h"
 
 DE * createDirectory(int numEntries, DE *parent) {

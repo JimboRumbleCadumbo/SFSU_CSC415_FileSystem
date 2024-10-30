@@ -12,8 +12,8 @@
 * read and write 
 *
 **************************************************************/
-#include "functions.h"
-#include "fsLow.h"
+
+#include "fsReadWrite.h"
 
 int discontinuousWrite(int startingBlock, void *buffer) {
     printf("Starting block is %d\n", startingBlock);
