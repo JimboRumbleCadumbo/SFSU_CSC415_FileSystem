@@ -8,7 +8,11 @@
 *
 * File:: fsFreeSpace.c
 *
-* Description:: Stuffs related to initializing the freespace
+* Description:: The fsFreeSpace.c file is essential for managing the
+  free space in the filesystem. It initializes the FAT, ensuring that 
+  blocks are correctly linked and marked, and writes this information to disk.
+  This setup is crucial for the efficient allocation and deallocation 
+  of blocks in the filesystem.
 *
 **************************************************************/
 
@@ -16,7 +20,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "functions.h"
 
 #define BLOCK_SIZE 512
 #define TOTAL_BLOCKS 19531
@@ -53,9 +56,8 @@ int initializeFAT() {
     fat[FAT_ENTRIES-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (discontinuousWrite(1, (void *)fat) != FAT_BLOCKS) {
+    if (discontinuousWrite(1, fat) != FAT_BLOCKS) {
         free(fat);
-        fat = NULL;
         return -1; // Write failed
     }
     // Return the starting block number of the FAT
