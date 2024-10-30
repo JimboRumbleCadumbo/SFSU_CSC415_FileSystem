@@ -17,9 +17,6 @@
 
 
 
-int releaseBlocks(int numToRelease, int startingBlock);
-int discontinuousWrite(int startingBlock, void *buffer);
-int discontinuousRead(int startingBlock, void *buffer);
-int initializeFAT();
+
 
 

@@ -8,7 +8,8 @@
 *
 * File:: fsFreeSpace.c
 *
-* Description:: The fsFreeSpace.c file is essential for managing the
+* Description:: The file is essential for out filesystem project. 
+  The fsFreeSpace.c file is important for managing the
   free space in the filesystem. It initializes the FAT, ensuring that 
   blocks are correctly linked and marked, and writes this information to disk.
   This setup is crucial for the efficient allocation and deallocation 
