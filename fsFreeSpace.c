@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "functions.h"
 
 #define BLOCK_SIZE 512
 #define TOTAL_BLOCKS 19531
@@ -27,8 +28,6 @@
 // Calculate number of blocks needed for FAT
 #define FAT_BLOCKS ((FAT_ENTRIES * sizeof(int) + BLOCK_SIZE - 1) / BLOCK_SIZE) 
 #define END_OF_CHAIN 0xFFFFFFFF
-
-extern int *fat;
 
 // Function to initialize the FAT
 int initializeFAT() {
@@ -56,7 +55,7 @@ int initializeFAT() {
     fat[FAT_ENTRIES-1] = END_OF_CHAIN;
     
     // Write the FAT to disk
-    if (discontinuousWrite(1, fat) != FAT_BLOCKS) {
+    if (discontinuousWrite(1, (void *)fat) != FAT_BLOCKS) {
         free(fat);
         return -1; // Write failed
     }

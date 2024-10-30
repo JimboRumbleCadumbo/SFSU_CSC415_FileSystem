@@ -26,6 +26,9 @@
 #include "functions.h"
 
 
+VCB *vcb = NULL;
+int *fat = NULL;
+
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
@@ -75,7 +78,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	return 0;
 	}
 	
-void exitFileSystem ()
+void exitFileSystem()
 	{
 		free(fat);
 		printf ("System exiting\n");
