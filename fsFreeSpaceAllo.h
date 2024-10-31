@@ -11,7 +11,8 @@
 * Description:: Header for fsFreeSpaceAllo.c
 *
 **************************************************************/
-
+#ifndef FSFREESPACEALLO_H
+#define FSFREESPACEALLO_H
 #include <stdio.h>
 #include <stdlib.h> 
 
@@ -21,3 +22,4 @@
 
 int allocateBlocks(int numBlocks);
 int releaseBlocks(int numToRelease, int startingBlock);
+#endif

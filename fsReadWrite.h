@@ -11,9 +11,11 @@
 * Description:: Header for fsReadWrite.c
 *
 **************************************************************/
-
+#ifndef FSREADWRITE_H
+#define FSREADWRITE_H
 #include "structs.h"
 #include "fsLow.h"
 
 int discontinuousWrite(int startingBlock, void *buffer);
 int discontinuousRead(int startingBlock, void *buffer); 
+#endif

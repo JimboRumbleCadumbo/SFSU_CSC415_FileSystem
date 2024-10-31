@@ -11,7 +11,8 @@
 * Description:: Header for fsFreeSpace.c
 *
 **************************************************************/
-
+#ifndef FSFREESPACE_H
+#define FSFREESPACE_H
 #include <stdlib.h>
 #include <string.h>
 
@@ -20,3 +21,4 @@
 
 int initializeFAT(int blockSize, int numBlocks);
 int releaseBlocks(int numToRelease, int startingBlock);
+#endif
