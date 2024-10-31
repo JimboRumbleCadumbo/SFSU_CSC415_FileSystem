@@ -43,3 +43,13 @@ int discontinuousRead(int startingBlock, void *buffer) {
     int blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
     return blocksRead;
 }
+
+int writeFAT() {
+    int numFATBlocks = ((vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1))/vcb->blockSize;
+    int blocksWritten = LBAwrite(fat, numFATBlocks, vcb->tableLoc);
+    if (blocksWritten != numFATBlocks) {
+        printf("Error writing all blocks of FAT. %d blocks written. \n", blocksWritten);
+        return -1;
+    }
+    return blocksWritten;
+}

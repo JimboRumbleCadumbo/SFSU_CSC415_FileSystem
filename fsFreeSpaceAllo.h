@@ -17,6 +17,7 @@
 #include <stdlib.h> 
 
 #include "structs.h"
+#include "fsReadWrite.h"
 
 #define END_OF_CHAIN 0xFFFFFFFF
 

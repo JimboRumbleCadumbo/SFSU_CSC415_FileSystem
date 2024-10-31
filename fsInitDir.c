@@ -40,7 +40,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     printf("Location of root directory: %d\n", location);
     int actualEntries = actualBytes / sizeof(DE);
     // Set everything but . and .. entries as unused
-    for (int i = 2; i < numEntries; i++) {
+    for (int i = 2; i < actualEntries; i++) {
         newDir[i].name[0] = '\0'; 
     }
     // Initialize . entry
@@ -72,5 +72,9 @@ DE * createDirectory(int numEntries, DE *parent) {
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
     int blocksWritten = discontinuousWrite(dir->location, dir);
+    if (blocks != blocksWritten) {
+        printf("Error writing directory.\n");
+        return -1;
+    }
     return blocksWritten;
 }
