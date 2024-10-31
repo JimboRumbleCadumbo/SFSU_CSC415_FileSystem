@@ -8,9 +8,16 @@
 *
 * File:: fsFreeSpaceAllo.c
 *
-* Description:: Set of routine that help allocating free blocks for
-* the user to use.
+* Description:: This file is part of the File System project and contains
+* routines for managing free space.
+* 
+*Functions::
+*allocateBlocks: Allocates a specified number of blocks and links them in the FAT.
+*releaseBlocks: Releases blocks back to the free space pool and updates the FAT.
 *
+*Why:: Efficiently managing free space is crucial for the filesystem's 
+*performance and integrity. These routines ensure that blocks can be
+* dynamically allocated and deallocated as needed.
 **************************************************************/
 
 #include "fsFreeSpace.h"

@@ -8,8 +8,11 @@
 *
 * File:: fsReadWrite.c
 *
-* Description:: wrapper functions to support discontinuous 
-* read and write 
+* Description:: This file contains wrapper functions to support discontinuous 
+* read and write. 
+* These functions are essential for handling non-contiguous blocks in the 
+* File Allocation Table (FAT), ensuring that data can be read from and written 
+* to the filesystem efficiently and correctly.
 *
 **************************************************************/
 

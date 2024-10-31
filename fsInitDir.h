@@ -8,7 +8,7 @@
 *
 * File:: fsInitDir.h
 *
-* Description:: Header for fsInit.c
+* Description:: This file contains the Header for fsInit.c
 *
 **************************************************************/
 #ifndef FSINITDIR_H

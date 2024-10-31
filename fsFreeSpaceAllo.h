@@ -8,7 +8,7 @@
 *
 * File:: fsFreeSpaceAllo.c
 *
-* Description:: Header for fsFreeSpaceAllo.c
+* Description:: This file contains the Header for fsFreeSpaceAllo.c
 *
 **************************************************************/
 #ifndef FSFREESPACEALLO_H

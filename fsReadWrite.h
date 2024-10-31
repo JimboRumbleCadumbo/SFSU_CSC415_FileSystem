@@ -8,7 +8,7 @@
 *
 * File:: fsReadWrite.h
 *
-* Description:: Header for fsReadWrite.c
+* Description:: This file contains Header for fsReadWrite.c
 *
 **************************************************************/
 #ifndef FSREADWRITE_H

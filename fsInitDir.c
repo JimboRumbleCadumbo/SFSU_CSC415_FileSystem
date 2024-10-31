@@ -8,7 +8,17 @@
 *
 * File:: fsInitDir.c
 *
-* Description:: Functions that are used relating to the directory.
+* Description:: This file is part of the  File System project.
+* Itcontains functions for managing directories.
+*
+*Functions::
+*createDirectory: Allocates space for a new directory, initializes 
+*its entries, and writes it to disk.
+*writeDir: Writes the directory data to the appropriate blocks on disk.
+*
+*Why:: Proper directory management is essential for organizing files and 
+*ensuring efficient access within the filesystem. These functions ensure 
+*that directories are correctly set up and maintained.
 *
 **************************************************************/
 
