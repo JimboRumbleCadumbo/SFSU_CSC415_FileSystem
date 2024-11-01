@@ -11,18 +11,21 @@
 * Description:: This file is part of the File System project and contains
 * routines for managing free space.
 * 
-*Functions::
-*allocateBlocks: Allocates a specified number of blocks and links them in the FAT.
-*releaseBlocks: Releases blocks back to the free space pool and updates the FAT.
-*
-*Why:: Efficiently managing free space is crucial for the filesystem's 
-*performance and integrity. These routines ensure that blocks can be
+* Why:: Efficiently managing free space is crucial for the filesystem's 
+* performance and integrity. These routines ensure that blocks can be
 * dynamically allocated and deallocated as needed.
 **************************************************************/
 
 #include "fsFreeSpace.h"
 
-// Allocate a chain of blocks
+/**
+ * int allocateBlocks(int numBlocks)
+ * 
+ * Description: Allocate a chain of blocks, chain them together, and write a
+ * END_OF_CHAIN at the last block of chain.
+ * 
+ * @param numBlocks the number of blocks that need to be allocated
+ */
 int allocateBlocks(int numBlocks) {
 
     printf("Allocating %d blocks...\n", numBlocks);
@@ -50,24 +53,34 @@ int allocateBlocks(int numBlocks) {
             printf("Setting end of chain to %d\n", currentBlock);
             fat[currentBlock] = END_OF_CHAIN;
             vcb->freeSpaceLoc = nextFreeBlock;
-        } else {
+        } 
+        else {
             fat[currentBlock] = nextFreeBlock;
             currentBlock = nextFreeBlock;
         }
     }
 
-    //vcb->numBlocks -= numBlocks;
     printf("Total free blocks after allocation: %d\n", vcb->numBlocks);
 
     printf("Done. Start block of the allocated chain: %d\n", startBlock);
+
     if (writeFAT() < 0) {
         printf("Error writing FAT\n");
         return -1;
     } 
+
     return startBlock;
 }
 
-// Release a chain of blocks
+/**
+ * int releaseBlocks(int numToRelease, int startingBlock)
+ * 
+ * Description: Releasing a number of blocks, or delinking, from the chain of 
+ * blocks
+ * 
+ * @param numToRelease Number of blocks to be released
+ * @param startingBlock The block location to start releasing from
+ */
 int releaseBlocks(int numToRelease, int startingBlock) {
     printf("Releasing %d blocks starting from block %d...\n", numToRelease, startingBlock);
 
@@ -87,9 +100,11 @@ int releaseBlocks(int numToRelease, int startingBlock) {
 
     vcb->freeSpaceLoc = startingBlock;
     printf("New start of free space: %d\n", vcb->freeSpaceLoc);
+
     if (writeFAT() < 0) {
         printf("Error writing FAT\n");
         return -1;
     } 
+    
     return vcb->freeSpaceLoc;
 }

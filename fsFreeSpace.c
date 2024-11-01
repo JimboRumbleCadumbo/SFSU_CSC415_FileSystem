@@ -19,27 +19,37 @@
 
 #include "fsFreeSpace.h"
 
-// Function to initialize the FAT
+/**
+ * int initializeFAT(int blockSize, int numBlocks)
+ * 
+ * Description: Initializes the FAT table
+ * 
+ * @param blocksSize size of each block
+ * @param numBlocks number of blocks to write
+ */
 int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT
     int totalBlocks = ((numBlocks * sizeof(int)) + (blockSize - 1))/blockSize;
     totalBlocks;
     int totalBytes = totalBlocks * blockSize;
     fat = (int *)malloc(totalBytes);
+
     if (fat == NULL) {
         return -1; // Memory allocation failed
     }
     printf("Total blocks: %d\n", totalBlocks);
 
-//  // link everything together 0 by itself and then block 1-2, 3-4 etc 
-// and thats how the total is FAT i is i+1 
-// last block 156 should be null or so we know its the end. // 0 is the VCB
+    // link everything together 0 by itself and then block 1-2, 3-4 etc 
+    // and thats how the total is FAT i is i+1 
+    // last block 156 should be null or so we know its the end. 
+    // 0 is the VCB
 
     // Initialize the FAT
     for (int i = 0; i < numBlocks; i++) {
         if (i == 0) {
             fat[i] = -1; // VCB is by itself
-        } else if (i == totalBlocks || i == numBlocks - 1) {
+        } 
+        else if (i == totalBlocks || i == numBlocks - 1) {
             // Mark the end of chain for the FAT table and the free space
             fat[i] = END_OF_CHAIN; 
         }
@@ -55,8 +65,10 @@ int initializeFAT(int blockSize, int numBlocks) {
         free(fat);
         fat = NULL;
         printf("Freed FAT\n");
+
         return -1; // Write failed
     }
-    // Return the starting block number of the FAT
-    return 1; // FAT starts at block 1
+    
+    // Return the starting block number of the FAT, which starts at block 1
+    return 1; 
 }

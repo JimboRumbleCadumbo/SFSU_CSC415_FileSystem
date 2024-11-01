@@ -18,38 +18,67 @@
 
 #include "fsReadWrite.h"
 
+/**
+ * int discontinuousWrite(int startingBlock, void *buffer)
+ * 
+ * Description: By utilizing the LBAwrite function, this function is made to
+ * write data one block at a time, until the last block in the chain.
+ * 
+ * @param startingBlock the block address that we wish to start writing from
+ * @param buffer pointer pointing to the start of the block chain.
+ */
 int discontinuousWrite(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesWritten = 0;
+
     while (fat[currentBlock] != END_OF_CHAIN) {
         LBAwrite(buffer + bytesWritten, 1, currentBlock);
         bytesWritten += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
+
     LBAwrite(buffer + bytesWritten, 1, currentBlock);
     bytesWritten += vcb->blockSize;
     int blocksWritten = (bytesWritten / vcb->blockSize);
     return blocksWritten;
 }
 
+/**
+ * int discontinuousRead(int startingBlock, void *buffer)
+ * 
+ * Description: By utilizing the LBAwrite function, this function is made to
+ * read data one block at a time, until the last block in the chain.
+ * 
+ * @param startingBlock the block address that we wish to start reading from
+ * @param buffer pointer pointing to the start of the block chain.
+ */
 int discontinuousRead(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesRead = 0;
+
     while (fat[currentBlock] != END_OF_CHAIN) {
         LBAread(buffer + bytesRead, 1, currentBlock);
         bytesRead += vcb->blockSize;
         currentBlock = fat[currentBlock];
     }
+
     int blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
     return blocksRead;
 }
 
+/**
+ * int writeFAT() 
+ * 
+ * Description: This function is for writing the FAT table to the disk.
+ */
 int writeFAT() {
     int numFATBlocks = ((vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1))/vcb->blockSize;
     int blocksWritten = LBAwrite(fat, numFATBlocks, vcb->tableLoc);
+
     if (blocksWritten != numFATBlocks) {
         printf("Error writing all blocks of FAT. %d blocks written. \n", blocksWritten);
         return -1;
     }
+    
     return blocksWritten;
 }

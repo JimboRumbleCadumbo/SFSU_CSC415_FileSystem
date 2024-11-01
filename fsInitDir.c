@@ -11,19 +11,20 @@
 * Description:: This file is part of the  File System project.
 * Itcontains functions for managing directories.
 *
-*Functions::
-*createDirectory: Allocates space for a new directory, initializes 
-*its entries, and writes it to disk.
-*writeDir: Writes the directory data to the appropriate blocks on disk.
-*
-*Why:: Proper directory management is essential for organizing files and 
-*ensuring efficient access within the filesystem. These functions ensure 
-*that directories are correctly set up and maintained.
-*
 **************************************************************/
 
 #include "fsInitDir.h"
 
+/**
+ * DE * createDirectory(int numEntries, DE *parent)
+ * 
+ * Description: Creating a directory and initializing the "." and the ".." 
+ * entries. This funtion is also able to initialize the root directory when 
+ * the *parent param is NULL.
+ * 
+ * @param numEntries Number of entries that we want to create
+ * @param parent The pointer to the parent struct, need this to connect the ".."
+ */
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries
     int bytesNeeded = numEntries * sizeof(DE);
@@ -31,18 +32,22 @@ DE * createDirectory(int numEntries, DE *parent) {
     int actualBytes = blocksNeeded * vcb->blockSize;
     DE *newDir;
     newDir = (DE *)malloc(actualBytes);
+    
     if (newDir == NULL) {
         printf("Malloc failed");
         return NULL;
     }
-    // get a location on the FAT for the file
+
+    // Get a location on the FAT for the file
     int location = allocateBlocks(blocksNeeded);
     printf("Location of root directory: %d\n", location);
+
     int actualEntries = actualBytes / sizeof(DE);
     // Set everything but . and .. entries as unused
     for (int i = 2; i < actualEntries; i++) {
         newDir[i].name[0] = '\0'; 
     }
+
     // Initialize . entry
     strcpy(newDir[0].name, ".");
     newDir[0].location = location;
@@ -51,30 +56,43 @@ DE * createDirectory(int numEntries, DE *parent) {
     time_t current = (time_t)time;
     newDir[0].timeCreated = current;
     newDir[0].timeModified = current;
+
     // Initialize .. as the parent entry or as itself in root case
     if (parent == NULL) { // Null passed in if creating root directory
         parent = newDir; // Set parent as itself
         vcb->rootLoc = location;
     }
+
     strcpy(newDir[1].name, "..");
     newDir[1].location = parent[0].location;
     newDir[1].size = parent[0].size;
     newDir[1].isDirectory = 1;
     newDir[1].timeCreated = parent[0].timeCreated;
     newDir[1].timeModified = parent[0].timeModified;
+
     if (writeDir(newDir) < 1) {
         printf("Error writing directory\n");
         return NULL;
     }
+
     return newDir;
 }
 
+/**
+ * int writeDir(DE *dir)
+ * 
+ * Description: Write the directory to the disk
+ * 
+ * @param dir Target directory
+ */
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
     int blocksWritten = discontinuousWrite(dir->location, dir);
+
     if (blocks != blocksWritten) {
         printf("Error writing directory.\n");
         return -1;
     }
+
     return blocksWritten;
 }
