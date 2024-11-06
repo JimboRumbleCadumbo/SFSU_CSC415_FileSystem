@@ -30,6 +30,7 @@ VCB *vcb = NULL;
 int *fat = NULL;
 DE *root = NULL;
 DE *cwd = NULL;
+char cwdString[MAX_PATH_LENGTH] = "";
 
 /**
  * int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -106,6 +107,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 		// Set current working directory to root directory at init
 		cwd = root;
+		char *rootPath = "/";
+		strcpy(cwdString, rootPath);
 
 		// printf("Sanity check for root %s\n", root[0].name);
 		printf("\n\nRead Complete...... \n\n");

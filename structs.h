@@ -27,6 +27,8 @@
 #include <time.h>
 
 #define END_OF_CHAIN 0xFFFFFFFF
+#define MAX_PATH_LENGTH 1024
+
 
 typedef struct VCB {
     int signature; // Signature
@@ -51,4 +53,5 @@ extern VCB *vcb;
 extern int *fat;
 extern DE *root;
 extern DE *cwd;
+extern char cwdString[MAX_PATH_LENGTH];
 #endif
