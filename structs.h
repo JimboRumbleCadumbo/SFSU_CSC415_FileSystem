@@ -45,7 +45,7 @@ typedef struct DE {
     int size;
     int isDirectory; 
     int location;
-    char name[225];
+    char name[256];
 } DE;
 
 // global variables
