@@ -29,6 +29,7 @@
 VCB *vcb = NULL;
 int *fat = NULL;
 DE *root = NULL;
+DE *cwd = NULL;
 
 /**
  * int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -92,12 +93,19 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		int numBytesInRoot = (sizeof(DE) * 50);
 		int numBlocksInRoot = (numBytesInRoot + (vcb->blockSize - 1))/vcb->blockSize;
 		root = malloc(numBlocksInRoot * vcb->blockSize);
+		cwd = malloc(numBlocksInRoot * vcb->blockSize);
 
 		if (root == NULL) {
-			printf("Malloc failed\n");
+			printf("Malloc for root failed\n");
+		}
+		if (cwd == NULL) {
+			printf("Malloc for root failed\n");
 		}
 
 		LBAread(root, numBlocksInRoot, vcb->rootLoc);
+
+		// Set current working directory to root directory at init
+		cwd = root;
 
 		// printf("Sanity check for root %s\n", root[0].name);
 		printf("\n\nRead Complete...... \n\n");

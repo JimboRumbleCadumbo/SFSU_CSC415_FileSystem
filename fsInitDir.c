@@ -53,7 +53,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     newDir[0].location = location;
     newDir[0].size = actualBytes;
     newDir[0].isDirectory = 1;
-    time_t current = (time_t)time;
+    time_t current = (time_t)time(NULL);
     newDir[0].timeCreated = current;
     newDir[0].timeModified = current;
 

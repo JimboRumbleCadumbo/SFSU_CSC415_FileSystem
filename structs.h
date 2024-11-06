@@ -46,8 +46,9 @@ typedef struct DE {
     char name[225];
 } DE;
 
-// global VCB variable
+// global variables
 extern VCB *vcb;
 extern int *fat;
 extern DE *root;
+extern DE *cwd;
 #endif
