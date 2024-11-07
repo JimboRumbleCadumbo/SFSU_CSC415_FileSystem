@@ -42,6 +42,8 @@ struct fs_diriteminfo
     unsigned short d_reclen;    /* length of this record */
     unsigned char fileType;    
     char d_name[256]; 			/* filename max filename is 255 characters */
+	time_t timeCreated;
+	time_t timeModified;
 	};
 
 // This is a private structure used only by fs_opendir, fs_readdir, and fs_closedir
@@ -84,7 +86,8 @@ struct fs_stat
 	time_t    st_accesstime;   	/* time of last access */
 	time_t    st_modtime;   	/* time of last modification */
 	time_t    st_createtime;   	/* time of last status change */
-	
+	mode_t	  st_mode;    		/* file or  directory*/
+
 	/* add additional attributes here for your file system */
 	};
 

@@ -44,44 +44,50 @@ int fs_setcwd(char *pathname){ //linux chdir
     return 0;
 }
 
-int fs_isFile(char * filename){ //return 1 if file, 0 otherwise
-    struct fs_diriteminfo dirEntry;
+int fs_isFile(char * filename){
+    struct fs_diriteminfo entry;
 
-    if (fetchDirEntry(filename, &dirEntry) != 0) {
-        return 0;
+    if (fetchDirEntry(filename, &entry) != 0) {
+        return 0; // Entry not found or invalid path
     }
-    // Not ready yet
-    // return dirEntry.fileType == ...;
+    
+    // Can replace 0 with FT_REGFILE
+    return entry.fileType == 0;
 }	
 
-int fs_isDir(char * pathname){ //return 1 if directory, 0 otherwise
-    struct fs_diriteminfo dirEntry;
+int fs_isDir(char * pathname){
+    struct fs_diriteminfo entry;
 
-    if (fetchDirEntry(pathname, &dirEntry) != 0) {
-        return 0;
+    if (fetchDirEntry(pathname, &entry) != 0) {
+        return 0; // Entry not found or invalid path
     }
-    // Not ready yet
-    // return dirEntry.fileType == ...;
+
+    // Can replace 1 with FT_DIRECTORY
+    return entry.fileType == 1;
 }
 
 // Function to retrieve file or directory data
 int fs_stat(const char *path, struct fs_stat *buf) {
-    struct fs_diriteminfo dirEntry;
+    struct fs_diriteminfo entry;
 
-    if (fetchDirEntry(path, &dirEntry) != 0) {
+    if (fetchDirEntry(path, &entry) != 0) {
         return -1; // Invalid path
     }
 
+    // Remember to add it into fs_diriteminfo
     memset(buf, 0, sizeof(struct fs_stat));  // Clear the struct
-    buf->st_size = dirEntry.d_reclen;  // Assumed the size matches d_reclen
+    buf->st_size = entry.d_reclen;  // Assumed the size matches d_reclen
     buf->st_blksize = 512;
     buf->st_blocks = (buf->st_size + 511) / 512;
 
-    buf->st_accesstime = time(NULL);  
-    buf->st_modtime = time(NULL);
-    buf->st_createtime = time(NULL);
+    buf->st_createtime = entry.timeCreated;
+    buf->st_modtime = entry.timeModified;
 
-    // buf->st_mode = (dirEntry.fileType == ...);
+    // We aren't tracking access time in our DE struct (structs.h)
+    // buf->st_accesstime = time(NULL); // Placeholder
+
+    // 1 for Directory, 0 for File
+    buf->st_mode = (entry.fileType == 1) ? 1 : 0;
 
     return 0;
 }
