@@ -15,7 +15,7 @@
 #define FSPATH_H
 #include <stdio.h>
 #include <string.h>
-#include "fsReadWrite.h"
+#include "fsDirUtility.h"
 #include "structs.h"    
 
 int parsePath(char *path, DE *retParent, int *index, char *lastElemName);

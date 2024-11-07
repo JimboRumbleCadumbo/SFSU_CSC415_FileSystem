@@ -20,13 +20,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-// Global variables
-extern DE *cwd; // Current working directory
-extern DE *root; // Root directory
-extern char cwdString[MAX_PATH_LENGTH]; // Current working directory string
 
 // Function to set the current working directory
-int setCwd(const char *path) {
+int setCwd(char *path) {
     if (path == NULL || strlen(path) == 0) {
         return -1; // Empty path 
     }
@@ -35,7 +31,7 @@ int setCwd(const char *path) {
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_PATH_LENGTH];
-    int result = parsePath(path, &retParent, &index, lastElemName);
+    int result = parsePath(path, retParent, &index, lastElemName);
     if (index == -1 || retParent == NULL) {
         return -1; // Safety check
     }
@@ -91,6 +87,6 @@ int setCwd(const char *path) {
 }
 
 // Function to get the current working directory
-const char* getCwd() {
+char* getCwd() {
     return cwdString;
 }
