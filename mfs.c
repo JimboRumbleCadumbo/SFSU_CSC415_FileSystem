@@ -67,7 +67,49 @@ int fs_rmdir(const char *pathname){
 }
 
 // Directory iteration functions
-fdDir * fs_opendir(const char *pathname);
+fdDir * fs_opendir(const char *pathname) {
+    if (pathname == NULL || strlen(pathname) == 0) {
+        return NULL; // Invalid path
+    }
+    DE *retParent;
+    int index = 0; 
+    char *lastElemName; 
+     // Copy path to pass into parsePath so we can strtok it
+    char *path;
+    strncpy(path, pathname, strlen(pathname));
+    int result = parsePath(path, retParent, &index, lastElemName);
+    if (result < 0) {
+        return NULL; // Invalid path
+    }
+    if (retParent == NULL || index < 0 || lastElemName == NULL) {
+        return NULL; // Error cases
+    }
+    int idx = findInDir(retParent, lastElemName);
+    if (idx < 0) {
+        return NULL; // Dir not found in parent
+    }
+    fdDir *openedDir;
+    openedDir = (fdDir *)malloc(sizeof(fdDir));
+    if (openedDir == NULL) {
+        return NULL; // Error malloc
+    }
+    DE *directory; 
+    directory = loadDir(&retParent[idx]);
+    struct fs_diriteminfo *dirInfo;
+    dirInfo = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
+    if (dirInfo == NULL) {
+        free(directory);
+        directory = NULL;
+        free(openedDir);
+        openedDir = NULL;
+        return NULL; // Malloc failed
+    }
+    openedDir->d_reclen = sizeof(fdDir);
+    openedDir->dirEntryPosition = 0;
+    openedDir->directory = directory;
+    openedDir->di = dirInfo;
+    return openedDir;
+}
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
 	return dirp;

@@ -130,5 +130,7 @@ void exitFileSystem()
 		fat = NULL;
 		free(root);
 		root = NULL;
+		free(cwd);
+		cwd = NULL;
 		printf ("System exiting\n");
 	}
