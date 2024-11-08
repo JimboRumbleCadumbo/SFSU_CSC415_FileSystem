@@ -28,7 +28,7 @@ DE * loadDir(DE *dir) {
     int bytesNeeded;
     int blocksNeeded = (dir->size + (vcb->blockSize - 1)) / vcb->blockSize;
     bytesNeeded = blocksNeeded * vcb->blockSize;
-    DE *new = malloc(bytesNeeded);
+    DE *new = (DE *)malloc(bytesNeeded);
     discontinuousRead(dir->location, new);
     if (new == NULL) {
         printf("Error with reading");

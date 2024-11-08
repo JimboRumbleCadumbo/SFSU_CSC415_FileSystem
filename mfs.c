@@ -19,7 +19,48 @@
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode){
-	return 0;
+	if (pathname == NULL || strlen(pathname) == 0) {
+        return -1;
+    }
+    DE *retParent;
+    int index = 0; 
+    char *lastElemName; 
+    // Copy path to pass into parsePath so we can strtok it
+    char *path;
+    strncpy(path, pathname, strlen(pathname));
+    int result = parsePath(path, retParent, &index, lastElemName);
+    if (result < 0) {
+        return -1; // Invalid path
+    }
+    if (retParent == NULL || lastElemName == NULL || index != 0) {
+        return -1; // No parent / no last element name / dir exists in parent
+    }
+    // Load the parent directory 
+    DE *loadedParent = loadDir(retParent);
+    if (loadedParent == NULL) {
+        return -1; 
+    }
+    DE *newDir;
+    newDir = createDirectory(ENTRIES_IN_DIR, &loadedParent[0]);
+    int idx = firstUnusedDirEntry(loadedParent);
+    if (idx < 2) {
+        return -1; // Either ., .., or nothing unused
+    }
+    strcpy(loadedParent[idx].name, lastElemName);
+    loadedParent[idx].size = newDir[0].size;
+    loadedParent[idx].isDirectory = 1;
+    loadedParent[idx].location = newDir[0].location;
+    loadedParent[idx].timeCreated = newDir[0].timeCreated;
+    loadedParent[idx].timeModified = newDir[0].timeModified;
+    if (writeDir(newDir) < 1) {
+        return -1; // Error writing new directory
+    }
+    if (writeDir(loadedParent) < 1) {
+        return -1; // Error writing new directory
+    }
+    free(newDir);
+    free(loadedParent);
+    return 0;
 }
 int fs_rmdir(const char *pathname){
 	return 0;

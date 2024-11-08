@@ -63,7 +63,6 @@ int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
     }
     while (1) {
         token2 = strtok_r(NULL, "/", &saveptr);
-        // TODO: Create helper function FindInDirectory
         int idx = findInDir(parent, token1);
         if (token2 == NULL) { // End of path 
             retParent = parent;
@@ -81,7 +80,6 @@ int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
                 return -1; // Not a directory
             }
             DE *newParent = loadDir(&parent[idx]);
-            // TODO: Implement FreeDirectory selective free
             freeDir(parent);
             parent = newParent;
             token1 = token2;

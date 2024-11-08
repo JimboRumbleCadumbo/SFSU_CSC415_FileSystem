@@ -22,6 +22,10 @@
 #include <time.h>
 
 #include "b_io.h"
+#include "fsPath.h"
+#include "fsInitDir.h"
+#include "structs.h"
+#include <string.h>
 
 #include <dirent.h>
 #define FT_REGFILE	DT_REG

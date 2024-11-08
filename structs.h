@@ -28,6 +28,7 @@
 
 #define END_OF_CHAIN 0xFFFFFFFF
 #define MAX_PATH_LENGTH 1024
+#define ENTRIES_IN_DIR 50
 
 
 typedef struct VCB {
