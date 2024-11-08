@@ -212,25 +212,41 @@ int fs_setcwd(char *pathname) { //linux chdir
 }
 
 int fs_isFile(char * filename){
-    struct fs_diriteminfo entry;
-
-    if (fetchDirEntry(filename, &entry) != 0) {
-        return 0; // Entry not found or invalid path
+    DE *retParent;
+    int index = 0; 
+    char *lastElemName; 
+    int result = parsePath(filename, retParent, &index, lastElemName);
+    if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL) {
+        return -1; // Failure
     }
-    
-    // Can replace 0 with FT_REGFILE
-    return entry.fileType == 0;
+    if (strcmp(retParent[index].name, lastElemName) != 0) {
+        return -1; // Names don't match
+    }
+    if (retParent[index].isDirectory == 1) {
+        return 0;
+    }
+    if (retParent[index].isDirectory == 0) {
+        return 1;
+    }
 }	
 
 int fs_isDir(char * pathname){
-    struct fs_diriteminfo entry;
-
-    if (fetchDirEntry(pathname, &entry) != 0) {
-        return 0; // Entry not found or invalid path
+    DE *retParent;
+    int index = 0; 
+    char *lastElemName; 
+    int result = parsePath(pathname, retParent, &index, lastElemName);
+    if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL) {
+        return -1; // Failure
     }
-
-    // Can replace 1 with FT_DIRECTORY
-    return entry.fileType == 1;
+    if (strcmp(retParent[index].name, lastElemName) != 0) {
+        return -1; // Names don't match
+    }
+    if (retParent[index].isDirectory == 1) {
+        return 1;
+    }
+    if (retParent[index].isDirectory == 0) {
+        return 0;
+    }
 }
 
 // Function to retrieve file or directory data
