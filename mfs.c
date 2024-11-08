@@ -110,6 +110,18 @@ fdDir * fs_opendir(const char *pathname) {
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp) {
     
+    if(dirp->dirEntryPosition < 50){
+        dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
+
+        dirp->di->timeCreated = dirp->directory->timeCreated;
+        dirp->di->timeModified = dirp->directory->timeModified;
+
+        strncpy(dirp->di->d_name, dirp->directory[dirp->dirEntryPosition].name, 256);
+        dirp->dirEntryPosition++;
+
+    }
+
+    return dirp->di;
 }
 
 
@@ -119,7 +131,7 @@ int fs_closedir(fdDir *dirp) {
     free(dirp->directory);
     dirp->directory = NULL;
     
-    dirp->d_reclen =0;
+    dirp->d_reclen = 0;
     dirp->dirEntryPosition = 0;
 
     free(dirp);
