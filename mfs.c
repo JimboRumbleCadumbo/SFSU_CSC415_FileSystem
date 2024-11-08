@@ -86,14 +86,14 @@ char * fs_getcwd(char *pathname, size_t size){
 }
 
 int fs_setcwd(char *pathname){ //linux chdir
-    if (path == NULL || strlen(path) == 0) {
+    if (pathname == NULL || strlen(pathname) == 0) {
         return -1; // Empty path 
     }
     // Validate the input path & confirm last element exists
     DE *retParent;
     int *index = 0;
     char *lastElemName;
-    int result = parsePath(path, retParent, index, lastElemName);
+    int result = parsePath(pathname, retParent, index, lastElemName);
     if (index == NULL || retParent == NULL) {
         return -1; // Safety check
     }
