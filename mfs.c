@@ -112,10 +112,10 @@ fdDir * fs_opendir(const char *pathname) {
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp){
-	return dirp;
+	return dirp->di;
 }
 int fs_closedir(fdDir *dirp){
-    return dirp;
+    return 0;
 }
 
 // Misc directory functions
