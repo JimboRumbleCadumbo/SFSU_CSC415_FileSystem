@@ -27,6 +27,11 @@ int fs_mkdir(const char *pathname, mode_t mode){
     char *lastElemName; 
     // Copy path to pass into parsePath so we can strtok it
     char *path;
+    path = malloc(strlen(pathname) + 1); // +1 for the null terminator
+    if (path == NULL) {
+        printf("Malloc failed.\n");
+        return -1;
+    }
     strncpy(path, pathname, strlen(pathname));
     int result = parsePath(path, retParent, &index, lastElemName);
     if (result < 0) {
@@ -59,7 +64,11 @@ int fs_mkdir(const char *pathname, mode_t mode){
         return -1; // Error writing new directory
     }
     free(newDir);
+    newDir = NULL;
     free(loadedParent);
+    loadedParent = NULL;
+    free(path);
+    path = NULL;
     return 0;
 }
 int fs_rmdir(const char *pathname){
@@ -76,17 +85,28 @@ fdDir * fs_opendir(const char *pathname) {
     char *lastElemName; 
      // Copy path to pass into parsePath so we can strtok it
     char *path;
+    path = malloc(strlen(pathname) + 1); // +1 for the null terminator
+    if (path == NULL) {
+        printf("Malloc failed.\n");
+        return NULL;
+    }
     strncpy(path, pathname, strlen(pathname));
     int result = parsePath(path, retParent, &index, lastElemName);
     if (result < 0) {
+        free(path);
+        path = NULL;
         return NULL; // Invalid path
     }
     if (retParent == NULL || index < 0 || lastElemName == NULL) {
+        free(path);
+        path = NULL;
         return NULL; // Error cases
     }
     fdDir *openedDir;
     openedDir = (fdDir *)malloc(sizeof(fdDir));
     if (openedDir == NULL) {
+        free(path);
+        path = NULL;
         return NULL; // Error malloc
     }
     DE *directory; 
@@ -98,12 +118,16 @@ fdDir * fs_opendir(const char *pathname) {
         directory = NULL;
         free(openedDir);
         openedDir = NULL;
+        free(path);
+        path = NULL;
         return NULL; // Malloc failed
     }
     openedDir->d_reclen = sizeof(fdDir);
     openedDir->dirEntryPosition = 0;
     openedDir->directory = directory;
     openedDir->di = dirInfo;
+    free(path);
+    path = NULL;
     return openedDir;
 }
 
@@ -267,12 +291,21 @@ int fs_stat(const char *path, struct fs_stat *buf) {
     char *lastElemName; 
     // Copy path to pass into parsePath so we can strtok it
     char *pathname;
+    pathname = malloc(strlen(path) + 1); // +1 for the null terminator
+    if (pathname == NULL) {
+        printf("Malloc failed.\n");
+        return -1;
+    }
     strncpy(pathname, path, strlen(path));
     int result = parsePath(pathname, retParent, &index, lastElemName);
     if (result < 0) {
+        free(pathname);
+        pathname = NULL;
         return -1; // Invalid path
     }
     if (retParent == NULL || lastElemName == NULL || index < 0) {
+        free(pathname);
+        pathname = NULL;
         return -1; // No parent / no last element name / dir does not exist in parent
     }
     buf->st_size = retParent[index].size;  // Assumed the size matches d_reclen
@@ -287,7 +320,8 @@ int fs_stat(const char *path, struct fs_stat *buf) {
 
     // 1 for Directory, 0 for File
     buf->st_mode = retParent[index].isDirectory;
-
+    free(pathname);
+    pathname = NULL;
     return 0;
 }
 

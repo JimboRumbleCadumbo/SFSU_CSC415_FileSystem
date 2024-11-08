@@ -128,8 +128,10 @@ void exitFileSystem()
 		vcb = NULL;
 		free(fat);
 		fat = NULL;
-		free(root);
-		root = NULL;
+		if (root != cwd) {
+			free(root);
+			root = NULL;
+		}
 		free(cwd);
 		cwd = NULL;
 		printf ("System exiting\n");
