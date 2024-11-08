@@ -84,17 +84,13 @@ fdDir * fs_opendir(const char *pathname) {
     if (retParent == NULL || index < 0 || lastElemName == NULL) {
         return NULL; // Error cases
     }
-    int idx = findInDir(retParent, lastElemName);
-    if (idx < 0) {
-        return NULL; // Dir not found in parent
-    }
     fdDir *openedDir;
     openedDir = (fdDir *)malloc(sizeof(fdDir));
     if (openedDir == NULL) {
         return NULL; // Error malloc
     }
     DE *directory; 
-    directory = loadDir(&retParent[idx]);
+    directory = loadDir(&retParent[index]);
     struct fs_diriteminfo *dirInfo;
     dirInfo = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
     if (dirInfo == NULL) {
@@ -149,7 +145,7 @@ int fs_setcwd(char *pathname) { //linux chdir
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_PATH_LENGTH];
-    int result = parsePath(pathname, &retParent, &index, lastElemName);
+    int result = parsePath(pathname, retParent, &index, lastElemName);
     if (index == -1 || retParent == NULL) {
         return -1; // Safety check
     }
@@ -251,26 +247,34 @@ int fs_isDir(char * pathname){
 
 // Function to retrieve file or directory data
 int fs_stat(const char *path, struct fs_stat *buf) {
-    struct fs_diriteminfo entry;
-
-    if (fetchDirEntry(path, &entry) != 0) {
+    if (path == NULL || strlen(path) == 0) {
+        return -1;
+    }
+    DE *retParent;
+    int index = 0; 
+    char *lastElemName; 
+    // Copy path to pass into parsePath so we can strtok it
+    char *pathname;
+    strncpy(pathname, path, strlen(path));
+    int result = parsePath(pathname, retParent, &index, lastElemName);
+    if (result < 0) {
         return -1; // Invalid path
     }
+    if (retParent == NULL || lastElemName == NULL || index < 0) {
+        return -1; // No parent / no last element name / dir does not exist in parent
+    }
+    buf->st_size = retParent[index].size;  // Assumed the size matches d_reclen
+    buf->st_blksize = vcb->blockSize;
+    buf->st_blocks = (buf->st_size + (vcb->blockSize - 1)) / (vcb->blockSize);
 
-    // Remember to add it into fs_diriteminfo
-    memset(buf, 0, sizeof(struct fs_stat));  // Clear the struct
-    buf->st_size = entry.d_reclen;  // Assumed the size matches d_reclen
-    buf->st_blksize = 512;
-    buf->st_blocks = (buf->st_size + 511) / 512;
-
-    buf->st_createtime = entry.timeCreated;
-    buf->st_modtime = entry.timeModified;
+    buf->st_createtime = retParent[index].timeCreated;
+    buf->st_modtime = retParent[index].timeModified;
 
     // We aren't tracking access time in our DE struct (structs.h)
     // buf->st_accesstime = time(NULL); // Placeholder
 
     // 1 for Directory, 0 for File
-    buf->st_mode = (entry.fileType == 1) ? 1 : 0;
+    buf->st_mode = retParent[index].isDirectory;
 
     return 0;
 }
