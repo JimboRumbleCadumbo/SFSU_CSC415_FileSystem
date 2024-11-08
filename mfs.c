@@ -140,30 +140,73 @@ char * fs_getcwd(char *pathname, size_t size){
     return pathname; // Return the buffer containing the current working directory
 }
 
-int fs_setcwd(char *pathname){ //linux chdir
+int fs_setcwd(char *pathname) { //linux chdir
     if (pathname == NULL || strlen(pathname) == 0) {
         return -1; // Empty path 
     }
+
     // Validate the input path & confirm last element exists
     DE *retParent;
-    int *index = 0;
-    char *lastElemName;
-    int result = parsePath(pathname, retParent, index, lastElemName);
-    if (index == NULL || retParent == NULL) {
+    int index = 0;
+    char lastElemName[MAX_PATH_LENGTH];
+    int result = parsePath(pathname, &retParent, &index, lastElemName);
+    if (index == -1 || retParent == NULL) {
         return -1; // Safety check
     }
-    if (result == -1 || retParent[*index].isDirectory == 0 || *index == -1) {
+    if (result == -1 || retParent[index].isDirectory == 0) {
         return -1; // Invalid path or not directory or directory not found
     }
 
-    DE *temp = loadDir(&retParent[*index]);
+    DE *temp = loadDir(&retParent[index]);
     // Free the previous cwd
     if (cwd != root) {
         free(cwd);
     }
     cwd = temp; // Update the cwd directory entry
 
-    //TODO: Vector implementation of updating the string
+    // Update the cwdString
+    char newCwdString[MAX_PATH_LENGTH];
+    if (pathname[0] == '/') {
+        // Absolute path
+        strncpy(newCwdString, pathname, MAX_PATH_LENGTH - 1);
+        newCwdString[MAX_PATH_LENGTH - 1] = '\0';
+    } else {
+        // Relative path
+        snprintf(newCwdString, MAX_PATH_LENGTH, "%s%s", cwdString, pathname);
+    }
+
+    // Normalize the path
+    char *token;
+    char *rest = newCwdString;
+    char *saveptr;
+    char *tokens[MAX_PATH_LENGTH];
+    int tokenCount = 0;
+
+    while ((token = strtok_r(rest, "/", &saveptr))) {
+        if (strcmp(token, ".") == 0) {
+            continue; // Ignore "."
+        } else if (strcmp(token, "..") == 0) {
+            if (tokenCount > 0) {
+                tokenCount--; // Go back one directory
+            }
+        } else {
+            tokens[tokenCount] = token; // Add to tokens
+            tokenCount++;
+        }
+    }
+
+    // Create an array of integers that matches the number of entries in the vector
+    int indices[tokenCount];
+    int idx = 0;
+
+    // Loop through the vector
+    for (int i = 0; i < tokenCount; i++) {
+        strcat(cwdString, tokens[i]);
+    }
+
+    // Null terminate cwdString
+    newCwdString[strlen(newCwdString)] = '\0';
+    strncpy(cwdString, newCwdString, strlen(newCwdString));
 
     return 0; // Success
 }
