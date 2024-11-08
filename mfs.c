@@ -78,11 +78,39 @@ int fs_closedir(fdDir *dirp){
 
 // Misc directory functions
 char * fs_getcwd(char *pathname, size_t size){
-    return 0;
+    // Copy the current working directory string to the provided buffer
+    strncpy(pathname, cwdString, size - 1);
+    pathname[size - 1] = '\0'; // Ensure null-termination
+
+    return pathname; // Return the buffer containing the current working directory
 }
 
 int fs_setcwd(char *pathname){ //linux chdir
-    return 0;
+    if (path == NULL || strlen(path) == 0) {
+        return -1; // Empty path 
+    }
+    // Validate the input path & confirm last element exists
+    DE *retParent;
+    int *index = 0;
+    char *lastElemName;
+    int result = parsePath(path, retParent, index, lastElemName);
+    if (index == NULL || retParent == NULL) {
+        return -1; // Safety check
+    }
+    if (result == -1 || retParent[*index].isDirectory == 0 || *index == -1) {
+        return -1; // Invalid path or not directory or directory not found
+    }
+
+    DE *temp = loadDir(&retParent[*index]);
+    // Free the previous cwd
+    if (cwd != root) {
+        free(cwd);
+    }
+    cwd = temp; // Update the cwd directory entry
+
+    //TODO: Vector implementation of updating the string
+
+    return 0; // Success
 }
 
 int fs_isFile(char * filename){
