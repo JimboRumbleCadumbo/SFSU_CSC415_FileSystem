@@ -51,3 +51,12 @@ int findInDir(DE *parent, char *name) {
     }
     return -1; // Directory not found
 }
+int firstUnusedDirEntry(DE *parent) {
+    int numEntries = parent[0].size / sizeof(DE);
+    for (int i = 0; i < numEntries; i++) {
+        if (parent[i].name == NULL) {
+            return i;
+        }
+    }
+    return -1; // All entries used
+}

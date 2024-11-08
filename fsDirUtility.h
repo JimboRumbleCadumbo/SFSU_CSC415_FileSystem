@@ -21,5 +21,6 @@
 void freeDir (DE *dir);
 DE * loadDir(DE *dir);
 int findInDir(DE *parent, char *name);
+int firstUnusedDirEntry(DE *parent);
 
 #endif
