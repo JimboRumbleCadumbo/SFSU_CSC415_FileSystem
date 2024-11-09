@@ -80,6 +80,7 @@ int parsePath(char *path, DE **retParent, int *index, char *lastElemName) {
             }
             strncpy(lastElemName, token1, MAX_NAME_LENGTH);
             lastElemName[MAX_NAME_LENGTH - 1] = '\0';  // Null-terminate at the last possible position
+            printf("Returning index %d, lastElemName %s, retParent %p vs. root %p\n", *index, lastElemName, retParent, root);
             return 0;
         } else { // token1 is not the last token
             // Need to confirm that token1 exists & is a directory

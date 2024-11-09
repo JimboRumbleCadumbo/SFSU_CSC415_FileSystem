@@ -47,6 +47,7 @@ int findInDir(DE *parent, char *name) {
     for (int i = 0; i < numEntries; i++) {
         // Check valid name
         if (parent[i].name != NULL || strlen(parent[i].name) != 0) {
+            printf("Name of entry: %s\n", parent[i].name);
             if (strcmp(parent[i].name, name) == 0) {
                 return i; // Index of where the directory is found
             }

@@ -24,7 +24,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
     }
     DE *retParent; 
     int index = 0;
-    char lastElemName[256];
+    char lastElemName[MAX_NAME_LENGTH];
     char *path = strdup(pathname);
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
@@ -46,7 +46,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
         printf("Creating directory failed.\n");
         return -1;
     }
-    strcpy(loadedDir[idx].name, newDir->name);
+    strcpy(loadedDir[idx].name, lastElemName);
     loadedDir[idx].isDirectory = 1;
     loadedDir[idx].location = newDir->location;
     loadedDir[idx].size = newDir->size;
@@ -66,15 +66,18 @@ int fs_rmdir(const char *pathname){
 
 // Directory iteration functions
 fdDir * fs_opendir(const char *pathname) {
+    printf("Opening directory %s.\n", pathname);
     if (pathname == NULL || strlen(pathname) == 0) {
         return NULL; // Invalid path
     }
+    printf("Parsing path.\n");
     DE *retParent;
     int index = 0; 
     char lastElemName[MAX_NAME_LENGTH]; 
-     // Copy path to pass into parsePath so we can strtok it
+    // Copy path to pass into parsePath so we can strtok it
     char *path = strdup(pathname);
     int result = parsePath(path, &retParent, &index, lastElemName);
+    printf("Finished parsing path.\n");
     free(path);
     path = NULL;
     if (result < 0) {
@@ -152,7 +155,9 @@ char * fs_getcwd(char *pathname, size_t size){
 }
 
 int fs_setcwd(char *pathname) { //linux chdir
+    printf("Starting set CWD function.\n");
     if (pathname == NULL || strlen(pathname) == 0) {
+        printf("Empty path.\n");
         return -1; // Empty path 
     }
 
@@ -162,20 +167,28 @@ int fs_setcwd(char *pathname) { //linux chdir
     char lastElemName[MAX_NAME_LENGTH];
     int result = parsePath(pathname, &retParent, &index, lastElemName);
     if (index == -1 || retParent == NULL) {
+        printf("Index is -1 or retParent is null.\n");
         return -1; // Safety check
     }
     if (result == -1 || retParent[index].isDirectory == 0) {
+        printf("Invalid path or directory not found or not directory.\n");
         return -1; // Invalid path or not directory or directory not found
     }
-
+    printf("Loading directory..\n");
     DE *temp = loadDir(&retParent[index]);
+    if (temp < 0) {
+        printf("Error loading directory.\n");
+        return -1;
+    }
     // Free the previous cwd
     if (cwd != root) {
+        printf("Freeing previous CWD.\n");
         free(cwd);
     }
-    cwd = temp; // Update the cwd directory entry
-
+    strcpy(cwd->name, lastElemName);
+    printf("The new CWD is %s.\nAttributes: \nlocation: %d, time created: %s\n", cwd->name, cwd->location, ctime(&cwd->timeCreated));
     // Update the cwdString
+    printf("Updating CWD path string\n");
     char newCwdString[MAX_PATH_LENGTH];
     if (pathname[0] == '/') {
         // Absolute path
@@ -188,12 +201,16 @@ int fs_setcwd(char *pathname) { //linux chdir
 
     // Normalize the path
     char *token;
+    char *token2;
     char *rest = newCwdString;
     char *saveptr;
     char *tokens[MAX_PATH_LENGTH];
     int tokenCount = 0;
 
-    while ((token = strtok_r(rest, "/", &saveptr))) {
+
+    token = strtok_r(rest, "/", &saveptr);
+    while (token != NULL) {
+        printf("starting while loop\n");
         if (strcmp(token, ".") == 0) {
             continue; // Ignore "."
         } else if (strcmp(token, "..") == 0) {
@@ -204,8 +221,8 @@ int fs_setcwd(char *pathname) { //linux chdir
             tokens[tokenCount] = token; // Add to tokens
             tokenCount++;
         }
+        token = strtok_r(NULL, "/", &saveptr);
     }
-
     // Create an array of integers that matches the number of entries in the vector
     int indices[tokenCount];
     int idx = 0;
@@ -219,6 +236,7 @@ int fs_setcwd(char *pathname) { //linux chdir
     newCwdString[strlen(newCwdString)] = '\0';
     strncpy(cwdString, newCwdString, strlen(newCwdString));
 
+    printf("New CWD string: %s\n", cwdString);
     return 0; // Success
 }
 
