@@ -35,7 +35,7 @@ int fs_mkdir(const char *pathname, mode_t mode){
     printf("Finished parsing path. %p is the root; %p is retParent.\n", root, retParent);
     DE *loadedDir = loadDir(retParent);
     if (loadedDir == NULL) {
-        free(retParent);
+        freeDir(retParent);
         printf("Error loading directory.\n");
         return -1; // error loading
     }
@@ -66,75 +66,72 @@ int fs_rmdir(const char *pathname){
 
 // Directory iteration functions
 fdDir * fs_opendir(const char *pathname) {
-    printf("Opening directory %s.\n", pathname);
-    if (pathname == NULL || strlen(pathname) == 0) {
-        return NULL; // Invalid path
-    }
-    printf("Parsing path.\n");
+    printf("Starting open directory on %s\n", pathname);
     DE *retParent;
-    int index = 0; 
-    char lastElemName[MAX_NAME_LENGTH]; 
-    // Copy path to pass into parsePath so we can strtok it
+    int index = 0;
+    char lastElemName[MAX_NAME_LENGTH];
     char *path = strdup(pathname);
+    if (path == NULL) {
+        return NULL; 
+    }
     int result = parsePath(path, &retParent, &index, lastElemName);
-    printf("Finished parsing path.\n");
     free(path);
     path = NULL;
-    if (result < 0) {
-        return NULL; // Invalid path
-    }
-    if (retParent == NULL || index < 0 || lastElemName == NULL) {
-        return NULL; // Error cases
-    }
-    fdDir *openedDir;
-    openedDir = (fdDir *)malloc(sizeof(fdDir));
+    if (result < 0 || index < 0) {
+        printf("Error parsing path.\n");
+        return NULL;
+    } 
+    printf("Successfully parsed path.\n");
+    fdDir *openedDir = (fdDir *)malloc(sizeof(fdDir));
     if (openedDir == NULL) {
-        free(path);
-        path = NULL;
-        return NULL; // Error malloc
+        printf("Error allocating memory for fdDir struct.\n");
+        return NULL;
     }
-    DE *directory; 
-    directory = loadDir(&retParent[index]);
-    struct fs_diriteminfo *dirInfo;
-    dirInfo = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
-    if (dirInfo == NULL) {
-        free(directory);
-        directory = NULL;
+    printf("Successfully allocated memory for fdDir struct.\n");
+    openedDir->d_reclen = sizeof(fdDir);
+    DE *loadedDir = loadDir(&retParent[index]);
+    if (loadedDir == NULL) {
+        printf("Error loading directory.\n");
         free(openedDir);
         openedDir = NULL;
-        free(path);
-        path = NULL;
-        return NULL; // Malloc failed
+        return NULL;
     }
-    openedDir->d_reclen = sizeof(fdDir);
+    printf("Successfully loaded directory.\n");
+    openedDir->directory = loadedDir;
+    struct fs_diriteminfo *di = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
+    if (di == NULL) {
+        printf("Error allocating fs_diriteminfo struct.\n");
+        free(openedDir);
+        openedDir = NULL;
+        freeDir(loadedDir);
+        loadedDir = NULL;
+    }
     openedDir->dirEntryPosition = 0;
-    openedDir->directory = directory;
-    openedDir->di = dirInfo;
+    openedDir->di = di;
+    printf("Successfully opened directory.\n");
     return openedDir;
 }
 
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp) {
-    
-    if(dirp->dirEntryPosition < 50){
+    int pos = dirp->dirEntryPosition;
+    if (pos < ENTRIES_IN_DIR && dirp->directory[pos].name[0] != '\0') {
+        strncpy(dirp->di->d_name, dirp->directory[pos].name, strlen(dirp->directory[pos].name));
+        dirp->di->d_name[sizeof(dirp->di->d_name) - 1] = '\0';
         dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
-
-        dirp->di->timeCreated = dirp->directory->timeCreated;
-        dirp->di->timeModified = dirp->directory->timeModified;
-
-        strncpy(dirp->di->d_name, dirp->directory[dirp->dirEntryPosition].name, MAX_NAME_LENGTH);
+        dirp->di->timeCreated = dirp->directory[pos].timeCreated;
+        dirp->di->timeModified = dirp->directory[pos].timeModified;
         dirp->dirEntryPosition++;
-
-    }
-
-    return dirp->di;
+        return dirp->di;
+    } 
+        return NULL;
 }
 
 
 int fs_closedir(fdDir *dirp) {
     free(dirp->di);
     dirp->di = NULL;
-    free(dirp->directory);
+    freeDir(dirp->directory);
     dirp->directory = NULL;
     
     dirp->d_reclen = 0;
@@ -181,10 +178,8 @@ int fs_setcwd(char *pathname) { //linux chdir
         return -1;
     }
     // Free the previous cwd
-    if (cwd != root) {
-        printf("Freeing previous CWD.\n");
-        free(cwd);
-    }
+    freeDir(cwd);
+    cwd = temp;
     strcpy(cwd->name, lastElemName);
     printf("The new CWD is %s.\nAttributes: \nlocation: %d, time created: %s\n", cwd->name, cwd->location, ctime(&cwd->timeCreated));
     // Update the cwdString
