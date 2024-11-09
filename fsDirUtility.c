@@ -57,7 +57,7 @@ int findInDir(DE *parent, char *name) {
 int firstUnusedDirEntry(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 0; i < numEntries; i++) {
-        if (parent[i].name == NULL) {
+        if (parent[i].name[0] == '\0') {
             return i;
         }
     }

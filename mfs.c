@@ -19,8 +19,47 @@
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode){
-
+    if (pathname == NULL || strlen(pathname) == 0) {
+        return -1; // Empty path
+    }
+    DE *retParent; 
+    int index = 0;
+    char lastElemName[256];
+    char *path = strdup(pathname);
+    int result = parsePath(path, &retParent, &index, lastElemName);
+    free(path);
+    path = NULL;
+    if (result < 0) {
+        return -1; // Invalid path / error during parsing
+    }
+    printf("Finished parsing path. %p is the root; %p is retParent.\n", root, retParent);
+    DE *loadedDir = loadDir(retParent);
+    if (loadedDir == NULL) {
+        free(retParent);
+        printf("Error loading directory.\n");
+        return -1; // error loading
+    }
+    int idx = firstUnusedDirEntry(loadedDir);
+    printf("The first unused directory entry in the parent directory is %d.\n", idx);
+    DE *newDir = createDirectory(ENTRIES_IN_DIR, loadedDir);
+    if (newDir == NULL) {
+        printf("Creating directory failed.\n");
+        return -1;
+    }
+    strcpy(loadedDir[idx].name, newDir->name);
+    loadedDir[idx].isDirectory = 1;
+    loadedDir[idx].location = newDir->location;
+    loadedDir[idx].size = newDir->size;
+    loadedDir[idx].timeCreated = newDir->timeCreated;
+    loadedDir[idx].timeModified = newDir->timeModified;
+    if (writeDir(loadedDir) < 1) {
+        printf("Failed to write directories.\n");
+        return -1; 
+    }
+    printf("Success.\n");
+    return 0;
 }
+
 int fs_rmdir(const char *pathname){
 	return 0;
 }
