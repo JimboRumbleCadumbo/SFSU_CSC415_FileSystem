@@ -31,18 +31,23 @@
  * @param lastElemName Return value: the string containing the name of the last file/dir
  *                     specified in the path: relevant to the caller's interests
  */
-int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
+int parsePath(char *path, DE **retParent, int *index, char *lastElemName) {
     // Check for valid path 
+    printf("Beginning parse path. Path is %s\n", path);
     if (path == NULL || strlen(path) == 0) {
+        printf("Invalid path specified.\n");
         return -1;
     }
     // Check for relative vs absolute path
     DE *start;
     if (path[0] == '/') {
         // Absolute path starts at root directory
+        printf("Starting at root directory.\n");
         start = root;
     } else {
         // Relative path starts at current working directory
+        printf("Starting at current working directory.\n");
+        printf("Current working directory: %s\n", cwdString);
         start = cwd;
     }
     DE *parent;
@@ -54,8 +59,8 @@ int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
     token1 = strtok_r(path, "/", &saveptr);
     if (token1 == NULL) {
         // Path is just '/'
-        retParent = parent;
-        lastElemName = NULL;
+        // printf("The path is just '/'.\n");
+        *retParent = parent;
         if (index != NULL) {
             *index = 0;
         }
@@ -65,11 +70,17 @@ int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
         token2 = strtok_r(NULL, "/", &saveptr);
         int idx = findInDir(parent, token1);
         if (token2 == NULL) { // End of path 
-            retParent = parent;
+            *retParent = parent;
             if (index != NULL) {
                 *index = idx;
             }
-            lastElemName = token1;
+            printf("Setting lastElemName to: %s\n", token1);
+            if (*retParent == root) {
+                printf("Setting retparent to root\n");
+            }
+            strncpy(lastElemName, token1, MAX_NAME_LENGTH);
+            lastElemName[MAX_NAME_LENGTH - 1] = '\0';  // Null-terminate at the last possible position
+            printf("Parsepath: retParent is %p, root is %p\n", retParent, root);
             return 0;
         } else { // token1 is not the last token
             // Need to confirm that token1 exists & is a directory
@@ -79,6 +90,7 @@ int parsePath(char *path, DE *retParent, int *index, char *lastElemName) {
             if (parent[idx].isDirectory != 1) {
                 return -1; // Not a directory
             }
+            printf("Moving forward.\n");
             DE *newParent = loadDir(&parent[idx]);
             freeDir(parent);
             parent = newParent;

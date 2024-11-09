@@ -19,57 +19,7 @@
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode){
-	if (pathname == NULL || strlen(pathname) == 0) {
-        return -1;
-    }
-    DE *retParent;
-    int index = 0; 
-    char *lastElemName; 
-    // Copy path to pass into parsePath so we can strtok it
-    char *path;
-    path = malloc(strlen(pathname) + 1); // +1 for the null terminator
-    if (path == NULL) {
-        printf("Malloc failed.\n");
-        return -1;
-    }
-    strncpy(path, pathname, strlen(pathname));
-    int result = parsePath(path, retParent, &index, lastElemName);
-    if (result < 0) {
-        return -1; // Invalid path
-    }
-    if (retParent == NULL || lastElemName == NULL || index != 0) {
-        return -1; // No parent / no last element name / dir exists in parent
-    }
-    // Load the parent directory 
-    DE *loadedParent = loadDir(retParent);
-    if (loadedParent == NULL) {
-        return -1; 
-    }
-    DE *newDir;
-    newDir = createDirectory(ENTRIES_IN_DIR, &loadedParent[0]);
-    int idx = firstUnusedDirEntry(loadedParent);
-    if (idx < 2) {
-        return -1; // Either ., .., or nothing unused
-    }
-    strcpy(loadedParent[idx].name, lastElemName);
-    loadedParent[idx].size = newDir[0].size;
-    loadedParent[idx].isDirectory = 1;
-    loadedParent[idx].location = newDir[0].location;
-    loadedParent[idx].timeCreated = newDir[0].timeCreated;
-    loadedParent[idx].timeModified = newDir[0].timeModified;
-    if (writeDir(newDir) < 1) {
-        return -1; // Error writing new directory
-    }
-    if (writeDir(loadedParent) < 1) {
-        return -1; // Error writing new directory
-    }
-    free(newDir);
-    newDir = NULL;
-    free(loadedParent);
-    loadedParent = NULL;
-    free(path);
-    path = NULL;
-    return 0;
+
 }
 int fs_rmdir(const char *pathname){
 	return 0;
@@ -82,24 +32,16 @@ fdDir * fs_opendir(const char *pathname) {
     }
     DE *retParent;
     int index = 0; 
-    char *lastElemName; 
+    char lastElemName[MAX_NAME_LENGTH]; 
      // Copy path to pass into parsePath so we can strtok it
-    char *path;
-    path = malloc(strlen(pathname) + 1); // +1 for the null terminator
-    if (path == NULL) {
-        printf("Malloc failed.\n");
-        return NULL;
-    }
-    strncpy(path, pathname, strlen(pathname));
-    int result = parsePath(path, retParent, &index, lastElemName);
+    char *path = strdup(pathname);
+    int result = parsePath(path, &retParent, &index, lastElemName);
+    free(path);
+    path = NULL;
     if (result < 0) {
-        free(path);
-        path = NULL;
         return NULL; // Invalid path
     }
     if (retParent == NULL || index < 0 || lastElemName == NULL) {
-        free(path);
-        path = NULL;
         return NULL; // Error cases
     }
     fdDir *openedDir;
@@ -126,8 +68,6 @@ fdDir * fs_opendir(const char *pathname) {
     openedDir->dirEntryPosition = 0;
     openedDir->directory = directory;
     openedDir->di = dirInfo;
-    free(path);
-    path = NULL;
     return openedDir;
 }
 
@@ -140,7 +80,7 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp) {
         dirp->di->timeCreated = dirp->directory->timeCreated;
         dirp->di->timeModified = dirp->directory->timeModified;
 
-        strncpy(dirp->di->d_name, dirp->directory[dirp->dirEntryPosition].name, 256);
+        strncpy(dirp->di->d_name, dirp->directory[dirp->dirEntryPosition].name, MAX_NAME_LENGTH);
         dirp->dirEntryPosition++;
 
     }
@@ -180,8 +120,8 @@ int fs_setcwd(char *pathname) { //linux chdir
     // Validate the input path & confirm last element exists
     DE *retParent;
     int index = 0;
-    char lastElemName[MAX_PATH_LENGTH];
-    int result = parsePath(pathname, retParent, &index, lastElemName);
+    char lastElemName[MAX_NAME_LENGTH];
+    int result = parsePath(pathname, &retParent, &index, lastElemName);
     if (index == -1 || retParent == NULL) {
         return -1; // Safety check
     }
@@ -246,8 +186,8 @@ int fs_setcwd(char *pathname) { //linux chdir
 int fs_isFile(char * filename){
     DE *retParent;
     int index = 0; 
-    char *lastElemName; 
-    int result = parsePath(filename, retParent, &index, lastElemName);
+    char lastElemName[MAX_NAME_LENGTH]; 
+    int result = parsePath(filename, &retParent, &index, lastElemName);
     if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL) {
         return -1; // Failure
     }
@@ -265,8 +205,8 @@ int fs_isFile(char * filename){
 int fs_isDir(char * pathname){
     DE *retParent;
     int index = 0; 
-    char *lastElemName; 
-    int result = parsePath(pathname, retParent, &index, lastElemName);
+    char lastElemName[MAX_NAME_LENGTH]; 
+    int result = parsePath(pathname, &retParent, &index, lastElemName);
     if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL) {
         return -1; // Failure
     }
@@ -288,24 +228,16 @@ int fs_stat(const char *path, struct fs_stat *buf) {
     }
     DE *retParent;
     int index = 0; 
-    char *lastElemName; 
+    char lastElemName[MAX_NAME_LENGTH]; 
     // Copy path to pass into parsePath so we can strtok it
-    char *pathname;
-    pathname = malloc(strlen(path) + 1); // +1 for the null terminator
-    if (pathname == NULL) {
-        printf("Malloc failed.\n");
-        return -1;
-    }
-    strncpy(pathname, path, strlen(path));
-    int result = parsePath(pathname, retParent, &index, lastElemName);
+    char *pathname = strdup(path);
+    int result = parsePath(pathname, &retParent, &index, lastElemName);
+    free(pathname);
+    pathname = NULL;
     if (result < 0) {
-        free(pathname);
-        pathname = NULL;
         return -1; // Invalid path
     }
     if (retParent == NULL || lastElemName == NULL || index < 0) {
-        free(pathname);
-        pathname = NULL;
         return -1; // No parent / no last element name / dir does not exist in parent
     }
     buf->st_size = retParent[index].size;  // Assumed the size matches d_reclen
@@ -320,8 +252,6 @@ int fs_stat(const char *path, struct fs_stat *buf) {
 
     // 1 for Directory, 0 for File
     buf->st_mode = retParent[index].isDirectory;
-    free(pathname);
-    pathname = NULL;
     return 0;
 }
 

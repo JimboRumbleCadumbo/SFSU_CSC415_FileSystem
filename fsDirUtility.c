@@ -25,6 +25,9 @@ DE * loadDir(DE *dir) {
     if (dir == NULL || dir->isDirectory != 1) {
         return NULL; // Invalid argument
     }
+    if (dir == root) {
+        return root;
+    }
     int bytesNeeded;
     int blocksNeeded = (dir->size + (vcb->blockSize - 1)) / vcb->blockSize;
     bytesNeeded = blocksNeeded * vcb->blockSize;

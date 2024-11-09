@@ -18,6 +18,6 @@
 #include "fsDirUtility.h"
 #include "structs.h"    
 
-int parsePath(char *path, DE *retParent, int *index, char *lastElemName);
+int parsePath(char *path, DE **retParent, int *index, char *lastElemName);
 
 #endif
