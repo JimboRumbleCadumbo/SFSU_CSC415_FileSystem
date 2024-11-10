@@ -40,7 +40,7 @@ DE * createDirectory(int numEntries, DE *parent) {
 
     // Get a location on the FAT for the file
     int location = allocateBlocks(blocksNeeded);
-    printf("Location of root directory: %d\n", location);
+    printf("Location of directory: %d\n", location);
 
     int actualEntries = actualBytes / sizeof(DE);
     // Set everything but . and .. entries as unused

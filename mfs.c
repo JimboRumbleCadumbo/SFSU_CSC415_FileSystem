@@ -31,9 +31,9 @@ int fs_mkdir(const char *pathname, mode_t mode)
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
     path = NULL;
-    if (result < 0)
+    if (result < 0 || index > 0)
     {
-        return -1; // Invalid path / error during parsing
+        return -1; // Invalid path / parse error / directory already exists
     }
     printf("Finished parsing path. %p is the root; %p is retParent.\n", root, retParent);
     DE *loadedDir = loadDir(retParent);
@@ -127,7 +127,10 @@ fdDir *fs_opendir(const char *pathname)
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
+    
     int pos = dirp->dirEntryPosition;
+    //printf("fs_readdir - pos: %d, dirEntryPosition: %d, entry name: %s\n",
+       //pos, dirp->dirEntryPosition, dirp->directory[pos].name);
     if (pos < ENTRIES_IN_DIR && dirp->directory[pos].name[0] != '\0')
     {
         strncpy(dirp->di->d_name, dirp->directory[pos].name, strlen(dirp->directory[pos].name));
@@ -153,6 +156,7 @@ int fs_closedir(fdDir *dirp)
 
     free(dirp);
     dirp = NULL;
+    printf("Successfully closed directory.\n");
     return 0; // Close success
 }
 
@@ -271,7 +275,11 @@ int fs_setcwd(char *pathname)
     strncpy(cwdString, newCwdString, MAX_PATH_LENGTH - 1);
     cwdString[MAX_PATH_LENGTH - 1] = '\0';
 
+    // Update CWD name 
+    strcpy(cwd->name, tokens[tokenCount-1]);
+
     printf("New CWD string: %s\n", cwdString);
+    printf("New CWD name: %s\n", cwd->name);
     return 0;
 }
 
