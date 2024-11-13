@@ -120,7 +120,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	cwd = root;
 	char *rootPath = "/";
 	strcpy(cwdString, rootPath);
-
+	cwdString[strlen(cwdString)] = '\0';
 	return 0;
 }
 

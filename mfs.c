@@ -210,22 +210,15 @@ char *fs_getcwd(char *pathname, size_t size)
 int fs_setcwd(char *pathname)
 { // linux chdir
     printf("Starting set CWD function.\n");
-    if (pathname == NULL || strlen(pathname) == 0)
+    if (pathname == NULL || strlen(pathname) == 0 || strcmp(pathname, "/") == 0)
     {
-        printf("Empty path.\n");
-        return -1; // Empty path
-    }
-
-    // Handle root directory case
-    if (strcmp(pathname, "/") == 0) {
-        cwd = root; // Set CWD to root directory
-        strncpy(cwdString, "/", MAX_PATH_LENGTH - 1);
-        cwdString[MAX_PATH_LENGTH - 1] = '\0';
-        strncpy(cwd->name, "root", MAX_NAME_LENGTH - 1);
-        cwd->name[MAX_NAME_LENGTH - 1] = '\0';
-        printf("New CWD string: %s\n", cwdString);
-        printf("New CWD name: %s\n", cwd->name);
-        return 0;
+        printf("Setting path to root directory.\n");
+        freeDir(cwd);
+        cwd = root;
+        char *rootPath = "/";
+	    strncpy(cwdString, rootPath, MAX_PATH_LENGTH);
+	    cwdString[strlen(cwdString)] = '\0';
+        return 0; // Path is just root directory
     }
 
     // Validate the input path & confirm last element exists
