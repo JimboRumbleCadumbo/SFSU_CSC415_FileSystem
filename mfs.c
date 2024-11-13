@@ -216,6 +216,18 @@ int fs_setcwd(char *pathname)
         return -1; // Empty path
     }
 
+    // Handle root directory case
+    if (strcmp(pathname, "/") == 0) {
+        cwd = root; // Set CWD to root directory
+        strncpy(cwdString, "/", MAX_PATH_LENGTH - 1);
+        cwdString[MAX_PATH_LENGTH - 1] = '\0';
+        strncpy(cwd->name, "root", MAX_NAME_LENGTH - 1);
+        cwd->name[MAX_NAME_LENGTH - 1] = '\0';
+        printf("New CWD string: %s\n", cwdString);
+        printf("New CWD name: %s\n", cwd->name);
+        return 0;
+    }
+
     // Validate the input path & confirm last element exists
     DE *retParent;
     int index = 0;

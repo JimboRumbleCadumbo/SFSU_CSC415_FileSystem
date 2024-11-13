@@ -507,34 +507,34 @@ int cmd_cp2fs (int argcnt, char *argvec[])
 /****************************************************
 *  cd commmand
 ****************************************************/
-int cmd_cd (int argcnt, char *argvec[])
-	{
-#if (CMDCD_ON == 1)	
-	if (argcnt != 2)
-		{
-		printf ("Usage: cd path\n");
-		return (-1);
-		}
-	char * path = argvec[1];	//argument
-	
-	if (path[0] == '"')
-		{
-		if (path[strlen(path)-1] == '"')
-			{
-			//remove quotes from string
-			path = path + 1;
-			path[strlen(path) - 1] = 0;
-			}
-		}
-	int ret = fs_setcwd (path);
-	if (ret != 0)	//error
-		{
-		printf ("Could not change path to %s\n", path);
-		return (ret);
-		}			
+int cmd_cd(int argcnt, char *argvec[]) {
+#if (CMDCD_ON == 1)
+    if (argcnt < 2 || strcmp(argvec[1], "") == 0) {
+        // Default to root if no path is provided
+        if (fs_setcwd("/") != 0) {
+            printf("Failed to change directory to root.\n");
+            return -1;
+        }
+        return 0;
+    }
+
+    char *path = argvec[1];
+
+    if (path[0] == '"') {
+        if (path[strlen(path) - 1] == '"') {
+            path = path + 1;
+            path[strlen(path) - 1] = '\0';
+        }
+    }
+
+    int ret = fs_setcwd(path);
+    if (ret != 0) {
+        printf("Could not change directory to %s\n", path);
+        return ret;
+    }
 #endif
-	return 0;
-	}
+    return 0;
+}
 	
 /****************************************************
 *  PWD commmand
