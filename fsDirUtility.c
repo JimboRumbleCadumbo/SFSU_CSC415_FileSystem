@@ -21,6 +21,7 @@ void freeDir (DE *dir) {
     }
     free(dir);
 }
+
 DE * loadDir(DE *dir) {
     if (dir == NULL || dir->isDirectory != 1) {
         return NULL; // Invalid argument
@@ -39,6 +40,7 @@ DE * loadDir(DE *dir) {
     }
     return new;
 }
+
 int findInDir(DE *parent, char *name) {
     if (parent == NULL || name == NULL) {
         return -2; // sentinel value for invalid input args
@@ -54,6 +56,7 @@ int findInDir(DE *parent, char *name) {
     }
     return -1; // Directory not found
 }
+
 int firstUnusedDirEntry(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 0; i < numEntries; i++) {
@@ -62,4 +65,14 @@ int firstUnusedDirEntry(DE *parent) {
         }
     }
     return -1; // All entries used
+}
+
+int isDirEmpty(DE *parent) {
+    int numEntries = parent[0].size / sizeof(DE);
+    for (int i = 2; i < numEntries; i++) {
+        if (parent[i].name[0] != '\0') {
+            return 0;
+        }
+    }
+    return 1;
 }
