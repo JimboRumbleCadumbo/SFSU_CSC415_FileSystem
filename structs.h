@@ -47,7 +47,7 @@ typedef struct DE {
     int size;
     int isDirectory; 
     int location;
-    char name[256];
+    char name[MAX_NAME_LENGTH];
 } DE;
 
 // global variables
