@@ -25,6 +25,7 @@
 #include "fsPath.h"
 #include "fsInitDir.h"
 #include "structs.h"
+#include "fsDirUtility.h"
 #include <string.h>
 
 #include <dirent.h>

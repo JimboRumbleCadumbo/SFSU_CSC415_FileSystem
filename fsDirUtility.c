@@ -71,6 +71,7 @@ int isDirEmpty(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 2; i < numEntries; i++) {
         if (parent[i].name[0] != '\0') {
+            printf("\nparent[i].name:  %s\n",parent[i].name);
             return 0;
         }
     }

@@ -68,6 +68,43 @@ int fs_mkdir(const char *pathname, mode_t mode)
 
 int fs_rmdir(const char *pathname)
 {
+    printf("\npfs_rmdir \n");
+    DE *retParent;
+    int index = 0;
+    char lastElemName[MAX_NAME_LENGTH];
+    char *path = strdup(pathname);
+    int result = parsePath(path, &retParent, &index, lastElemName);
+    printf("\nparsePath1 \n");
+    free(path);
+    path = NULL;
+    if (result < 0 || index < 0)
+    {
+        // Directory not found
+        printf("Cannot remove directory, invalid path or directory not found.\n");
+        return -1; // Invalid path / parse error / directory already exists
+    }
+    printf("Starting remove directory on %s\n", retParent[index].name);
+    DE *target = loadDir(&retParent[index]);
+    if(isDirEmpty(target) == 0){
+        printf("Cannot remove directory, directory is not empty.\n");
+        return -1;
+    }
+
+    int releaseResult = releaseBlocks(target->size/vcb->blockSize, target->location);
+    if(releaseResult < 0){
+        printf("Failed to release blocks.\n");
+        return -1;
+    }
+
+    free(target); 
+
+    strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
+    int writeBackResult = writeDir(retParent);
+    if(writeBackResult < 0){
+        printf("Failed to write back directory.\n");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -312,7 +349,9 @@ int fs_isDir(char *pathname)
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-    int result = parsePath(pathname, &retParent, &index, lastElemName);
+    char *path = strdup(pathname);
+    int result = parsePath(path, &retParent, &index, lastElemName);
+    free(path);
     if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
         return -1; // Failure
@@ -371,5 +410,6 @@ int fs_stat(const char *path, struct fs_stat *buf)
 
 int fs_delete(char *filename)
 { // removes a file
+
     return 0;
 }
