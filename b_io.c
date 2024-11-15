@@ -90,12 +90,7 @@ b_io_fd b_open(char *filename, int flags)
     }
     printf("Successfully parsed path. \n");
     printf("Allocating memory for FCB. \n");
-        b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
-        if (fcb == NULL)
-        {
-            printf("Error allocating memory for FCB.\n");
-            return -1;
-        }
+    b_fcb fcb;
     time_t now = time(NULL);
     // Create the file if it doesn't exist
     if (flags & O_CREAT)
@@ -108,7 +103,6 @@ b_io_fd b_open(char *filename, int flags)
             if (index < 0)
             {
                 printf("Unused DE not found in parent. \n");
-                free(fcb);
                 return -1; // No more unused DEs in the parent
             }
             printf("Found unused DE #%d in parent directory. \n", index);
@@ -118,29 +112,65 @@ b_io_fd b_open(char *filename, int flags)
             retParent[index].location = 0;
             retParent[index].timeCreated = now;
             retParent[index].isDirectory = 0;
-        }
-
-        printf("Modifying parent directory. \n");
-        retParent[index].timeModified = now;
-        fcb->blockSize = vcb->blockSize;
-        fcb->index = 0;
-        printf("Writing parent directory. %s to disk.\n", retParent->name);
-        if (writeDir(retParent) < 1) {
-            printf("Error writing parent directory.\n");
-            return -1;
+            fcb.filePointer = 0;
+            fcb.fileSize = 0;
+            fcb.index = 0;
+            fcb.buflen = 0;
         }
     }
+    // Truncate existing file
+    if (flags & O_TRUNC)
+    {
+        printf("Truncate flag specified. \n");
+        if (index < 0)
+        {
+            printf("File does not exist.\n");
+            return -1;
+        }
+        int numBytesToRelease = retParent[index].size;
+        int blocksToRelease = (numBytesToRelease + (vcb->blockSize - 1)) / vcb->blockSize;
+        printf("Releasing blocks back to free space. \n");
+        if (releaseBlocks(blocksToRelease, blocksToRelease) < 0)
+        {
+            printf("Error releasing blocks. \n");
+            return -1;
+        }
+        retParent[index].size = 0;
+        retParent[index].location = 0;
+        fcb.filePointer = 0;
+        fcb.fileSize = 0;
+        fcb.index = 0;
+        fcb.buflen = 0;
+    }
+
     printf("Getting file control block. \n");
     returnFd = b_getFCB(); // get our own file descriptor
                            // check for error - all used FCB's
-    if (returnFd < 0) {
+    printf("FCB is %d\n", returnFd);
+    if (returnFd < 0)
+    {
         printf("All available FCBs are used.\n");
-        free(fcb);
         return -1;
     }
-
-    fcb->fileDescriptor = returnFd;
-
+    printf("Modifying parent directory. \n");
+    fcb.fileDescriptor = returnFd;
+    retParent[index].timeModified = now;
+    fcb.blockSize = vcb->blockSize;
+    char *buf = malloc(B_CHUNK_SIZE);
+    if (buf == NULL)
+    {
+        printf("Error allocating memory to buffer.\n");
+        return -1;
+    }
+    fcb.buf = buf;
+    printf("Writing parent directory to disk.\n");
+    if (writeDir(retParent) < 1)
+    {
+        printf("Error writing parent directory.\n");
+        free(buf);
+        return -1;
+    }
+    fcbArray[returnFd] = fcb;
     return (returnFd); // all set
 }
 
@@ -171,17 +201,17 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
     off_t newPointer;
     switch (whence)
     {
-        case SEEK_SET:
-            newPointer = offset;
-            break;
-        case SEEK_CUR:
-            newPointer = fcb->filePointer + offset;
-            break;
-        case SEEK_END:
-            newPointer = fcb->fileSize + offset;
-            break;
-        default:
-            return -1; // Invalid whence value
+    case SEEK_SET:
+        newPointer = offset;
+        break;
+    case SEEK_CUR:
+        newPointer = fcb->filePointer + offset;
+        break;
+    case SEEK_END:
+        newPointer = fcb->fileSize + offset;
+        break;
+    default:
+        return -1; // Invalid whence value
     }
 
     // Check for invalid new pointer position
@@ -282,7 +312,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     return bytesWritten;
 }
 
-
 // Interface to read a buffer
 
 // Filling the callers request is broken into three parts
@@ -344,7 +373,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
             fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
             if (fcb->buflen < 0)
             {
-                return -1;  // Error reading file
+                return -1; // Error reading file
             }
             fcb->index = blockOffset;
         }
