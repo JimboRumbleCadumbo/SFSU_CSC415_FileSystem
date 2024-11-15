@@ -187,18 +187,44 @@ int b_read(b_io_fd fd, char *buffer, int count)
         bytesToRead = fcb->fileSize - fcb->filePointer;  // Adjust bytes to read if it exceeds file size
     }
 
-    // Read data from the file into the buffer
-    int bytesRead = LBAread(buffer, bytesToRead, fcb->filePointer / fcb->blockSize);
-    if (bytesRead < 0)
+    int totalBytesRead = 0;
+    while (bytesToRead > 0)
     {
-        return -1;  // Error reading file
+        // Check if buffer needs to be refilled
+        if (fcb->index >= fcb->buflen)
+        {
+            // Calculate the block number to read from
+            int blockNumber = fcb->filePointer / fcb->blockSize;
+            int blockOffset = fcb->filePointer % fcb->blockSize;
+
+            // Read the block into the buffer
+            fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
+            if (fcb->buflen < 0)
+            {
+                return -1;  // Error reading file
+            }
+            fcb->index = blockOffset;
+        }
+
+        // Calculate the number of bytes to copy from the buffer
+        int bytesFromBuffer = fcb->buflen - fcb->index;
+        if (bytesFromBuffer > bytesToRead)
+        {
+            bytesFromBuffer = bytesToRead;
+        }
+
+        // Copy data from the buffer to the user's buffer
+        memcpy(buffer + totalBytesRead, fcb->buf + fcb->index, bytesFromBuffer);
+
+        // Update pointers and counters
+        fcb->index += bytesFromBuffer;
+        fcb->filePointer += bytesFromBuffer;
+        totalBytesRead += bytesFromBuffer;
+        bytesToRead -= bytesFromBuffer;
     }
 
-    // Update the file pointer
-    fcb->filePointer += bytesRead;
-
     // Return the number of bytes read
-    return bytesRead;
+    return totalBytesRead;
 }
 
 // Interface to Close the file    
