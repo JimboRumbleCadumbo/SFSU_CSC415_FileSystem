@@ -211,16 +211,77 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
 int b_write(b_io_fd fd, char *buffer, int count)
 {
     if (startup == 0)
-        b_init(); // Initialize our system
+        b_init(); // Initialize the system
 
-    // check that fd is between 0 and (MAXFCBS-1)
-    if ((fd < 0) || (fd >= MAXFCBS))
+    // Validate the file descriptor
+    if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
     {
-        return (-1); // invalid file descriptor
+        printf("Invalid file descriptor or buffer.\n");
+        return -1; // Invalid fd
     }
 
-    return (0); // Change this
+    b_fcb *fcb = &fcbArray[fd];
+
+    // Check if the file is writable
+    if (fcb->fileDescriptor < 0)
+    {
+        printf("File is not open or writable.\n");
+        return -1;
+    }
+
+    int bytesWritten = 0;
+
+    while (bytesWritten < count)
+    {
+        // Space available in the buffer
+        int spaceInBuffer = fcb->blockSize - fcb->index;
+
+        // Bytes to write into the buffer
+        int bytesToBuffer = (count - bytesWritten < spaceInBuffer) ? count - bytesWritten : spaceInBuffer;
+
+        // Copy data to the buffer
+        memcpy(fcb->buf + fcb->index, buffer + bytesWritten, bytesToBuffer);
+        fcb->index += bytesToBuffer;
+        bytesWritten += bytesToBuffer;
+
+        // Flush buffer to disk if full
+        if (fcb->index == fcb->blockSize)
+        {
+            printf("Flushing buffer to disk...\n");
+            int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
+            if (blocksWritten <= 0)
+            {
+                printf("Error during discontinuous write.\n");
+                return -1; // Disk write error
+            }
+            fcb->index = 0; // Reset buffer index
+        }
+    }
+
+    // Flush any remaining data in the buffer to disk
+    if (fcb->index > 0)
+    {
+        printf("Writing remaining data to disk...\n");
+        int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
+        if (blocksWritten <= 0)
+        {
+            printf("Error writing remaining data to disk.\n");
+            return -1;
+        }
+        fcb->index = 0;
+    }
+
+    // Update file metadata
+    fcb->filePointer += bytesWritten;
+    if (fcb->filePointer > fcb->fileSize)
+    {
+        fcb->fileSize = fcb->filePointer; // Update file size if file grows
+    }
+
+    printf("Write complete. Bytes written: %d\n", bytesWritten);
+    return bytesWritten;
 }
+
 
 // Interface to read a buffer
 
