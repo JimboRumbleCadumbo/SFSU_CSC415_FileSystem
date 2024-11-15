@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include "structs.h"
 #include "fsPath.h"
+#include "fsInitDir.h"
 
 typedef int b_io_fd;
 

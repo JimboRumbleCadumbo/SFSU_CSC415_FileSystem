@@ -111,7 +111,7 @@ b_io_fd b_open(char *filename, int flags)
                 free(fcb);
                 return -1; // No more unused DEs in the parent
             }
-            printf("Found unused DE in parent directory. \n");
+            printf("Found unused DE #%d in parent directory. \n", index);
             printf("Populating DE in parent directory. \n");
             strcpy(retParent[index].name, lastElemName);
             retParent[index].size = 0;
@@ -119,11 +119,18 @@ b_io_fd b_open(char *filename, int flags)
             retParent[index].timeCreated = now;
             retParent[index].isDirectory = 0;
         }
+
+        printf("Modifying parent directory. \n");
         retParent[index].timeModified = now;
         fcb->blockSize = vcb->blockSize;
         fcb->index = 0;
+        printf("Writing parent directory. %s to disk.\n", retParent->name);
+        if (writeDir(retParent) < 1) {
+            printf("Error writing parent directory.\n");
+            return -1;
+        }
     }
-
+    printf("Getting file control block. \n");
     returnFd = b_getFCB(); // get our own file descriptor
                            // check for error - all used FCB's
     if (returnFd < 0) {

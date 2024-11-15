@@ -319,20 +319,7 @@ int fs_setcwd(char *pathname)
     strncpy(cwdString, newCwdString, MAX_PATH_LENGTH - 1);
     cwdString[MAX_PATH_LENGTH - 1] = '\0';
 
-    // Update CWD name
-    if (tokenCount == 0) {
-        // The root is the CWD. 
-        freeDir(cwd);
-        cwd = root;
-        char *rootPath = "/";
-        strncpy(cwdString, rootPath, MAX_PATH_LENGTH);
-        cwdString[strlen(cwdString)] = '\0';
-        return 0; // Path is just root directory
-    }
-    strcpy(cwd->name, tokens[tokenCount - 1]);
-
     printf("New CWD string: %s\n", cwdString);
-    printf("New CWD name: %s\n", cwd->name);
     return 0;
 }
 
