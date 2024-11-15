@@ -84,22 +84,25 @@ int fs_rmdir(const char *pathname)
     }
     printf("Starting remove directory on %s\n", retParent[index].name);
     DE *target = loadDir(&retParent[index]);
-    if(isDirEmpty(target) == 0){
+    if (isDirEmpty(target) == 0)
+    {
         printf("Cannot remove directory, directory is not empty.\n");
         return -1;
     }
 
-    int releaseResult = releaseBlocks(target->size/vcb->blockSize, target->location);
-    if(releaseResult < 0){
+    int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
+    if (releaseResult < 0)
+    {
         printf("Failed to release blocks.\n");
         return -1;
     }
 
-    free(target); 
+    free(target);
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     int writeBackResult = writeDir(retParent);
-    if(writeBackResult < 0){
+    if (writeBackResult < 0)
+    {
         printf("Failed to write back directory.\n");
         return -1;
     }
@@ -163,10 +166,10 @@ fdDir *fs_opendir(const char *pathname)
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
-    
+
     int pos = dirp->dirEntryPosition;
-    //printf("fs_readdir - pos: %d, dirEntryPosition: %d, entry name: %s\n",
-       //pos, dirp->dirEntryPosition, dirp->directory[pos].name);
+    // printf("fs_readdir - pos: %d, dirEntryPosition: %d, entry name: %s\n",
+    // pos, dirp->dirEntryPosition, dirp->directory[pos].name);
     if (pos < ENTRIES_IN_DIR && dirp->directory[pos].name[0] != '\0')
     {
         strncpy(dirp->di->d_name, dirp->directory[pos].name, strlen(dirp->directory[pos].name));
@@ -215,8 +218,8 @@ int fs_setcwd(char *pathname)
         freeDir(cwd);
         cwd = root;
         char *rootPath = "/";
-	    strncpy(cwdString, rootPath, MAX_PATH_LENGTH);
-	    cwdString[strlen(cwdString)] = '\0';
+        strncpy(cwdString, rootPath, MAX_PATH_LENGTH);
+        cwdString[strlen(cwdString)] = '\0';
         return 0; // Path is just root directory
     }
 
@@ -235,7 +238,8 @@ int fs_setcwd(char *pathname)
         printf("Invalid path or directory not found or not directory.\n");
         return -1; // Invalid path or not directory or directory not found
     }
-    printf("Loading directory..\n");
+
+    printf("Loading directory.\n");
     DE *temp = loadDir(&retParent[index]);
     if (temp < 0)
     {
@@ -311,13 +315,21 @@ int fs_setcwd(char *pathname)
             strncat(newCwdString, "/", MAX_PATH_LENGTH - strlen(newCwdString) - 1);
         }
     }
-
     // Update cwdString
     strncpy(cwdString, newCwdString, MAX_PATH_LENGTH - 1);
     cwdString[MAX_PATH_LENGTH - 1] = '\0';
 
-    // Update CWD name 
-    strcpy(cwd->name, tokens[tokenCount-1]);
+    // Update CWD name
+    if (tokenCount == 0) {
+        // The root is the CWD. 
+        freeDir(cwd);
+        cwd = root;
+        char *rootPath = "/";
+        strncpy(cwdString, rootPath, MAX_PATH_LENGTH);
+        cwdString[strlen(cwdString)] = '\0';
+        return 0; // Path is just root directory
+    }
+    strcpy(cwd->name, tokens[tokenCount - 1]);
 
     printf("New CWD string: %s\n", cwdString);
     printf("New CWD name: %s\n", cwd->name);
@@ -412,7 +424,6 @@ int fs_stat(const char *path, struct fs_stat *buf)
     return 0;
 }
 
-
 /**
  * Waiting for b_open & b_close to finish for testing, might need debug.
  */
@@ -422,9 +433,9 @@ int fs_delete(char *filename)
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-    char *path = strdup(cwdString); //need to change this into the file name location
+    char *path = strdup(cwdString); // need to change this into the file name location
     int result = parsePath(path, &retParent, &index, lastElemName);
-    
+
     free(path);
     path = NULL;
     if (result < 0 || index < 0)
@@ -434,19 +445,21 @@ int fs_delete(char *filename)
         return -1; // Invalid path / parse error / directory already exists
     }
     printf("Starting remove file on %s\n", retParent[index].name);
-    DE *target = loadDir(&retParent[index]); 
+    DE *target = loadDir(&retParent[index]);
 
-    int releaseResult = releaseBlocks(target->size/vcb->blockSize, target->location);
-    if(releaseResult < 0){
+    int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
+    if (releaseResult < 0)
+    {
         printf("Failed to release blocks.\n");
         return -1;
     }
 
-    free(target); 
+    free(target);
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     int writeBackResult = writeDir(retParent);
-    if(writeBackResult < 0){
+    if (writeBackResult < 0)
+    {
         printf("Failed to write back file.\n");
         return -1;
     }
