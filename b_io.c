@@ -11,7 +11,7 @@
  * Description:: Basic File System - Key File I/O Operations
  *
  **************************************************************/
-// Rishita to work on read and seek
+// Rishita to work on read, seek and close
 
 #include "b_io.h"
 
@@ -145,18 +145,66 @@ b_io_fd b_open(char *filename, int flags)
 }
 
 // Interface to seek function
+// also make sure that seek aslo loads the buffer
+
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
     if (startup == 0)
         b_init(); // Initialize our system
 
-    // check that fd is between 0 and (MAXFCBS-1)
+    // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        return (-1); // invalid file descriptor
+        return -1; // Invalid file descriptor
     }
 
-    return (0); // Change this
+    // Get the file control block
+    b_fcb *fcb = &fcbArray[fd];
+
+    // Check if the file is open
+    if (fcb->fileDescriptor == -1)
+    {
+        return -1; // File not open
+    }
+
+    // Calculate the new file pointer position
+    off_t newPointer;
+    switch (whence)
+    {
+        case SEEK_SET:
+            newPointer = offset;
+            break;
+        case SEEK_CUR:
+            newPointer = fcb->filePointer + offset;
+            break;
+        case SEEK_END:
+            newPointer = fcb->fileSize + offset;
+            break;
+        default:
+            return -1; // Invalid whence value
+    }
+
+    // Check for invalid new pointer position
+    if (newPointer < 0 || newPointer > fcb->fileSize)
+    {
+        return -1; // Invalid new pointer position
+    }
+
+    // Set the new file pointer position
+    fcb->filePointer = newPointer;
+
+    // Load the buffer with the appropriate block
+    int blockNumber = fcb->filePointer / fcb->blockSize;
+    int blockOffset = fcb->filePointer % fcb->blockSize;
+
+    fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
+    if (fcb->buflen < 0)
+    {
+        return -1; // Error reading file
+    }
+    fcb->index = blockOffset;
+
+    return newPointer; // Return the new file pointer position
 }
 
 // Interface to write function
