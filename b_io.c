@@ -73,6 +73,7 @@ b_io_fd b_getFCB()
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open(char *filename, int flags)
 {
+    printf("Starting open function. \n");
     b_io_fd returnFd;
 
     //*** TODO ***:  Modify to save or set any information needed
@@ -81,19 +82,24 @@ b_io_fd b_open(char *filename, int flags)
     DE *retParent; 
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-    int result = parsePath(filename, &retParent, &index, &lastElemName);
+     printf("Parsing path. \n");
+    int result = parsePath(filename, &retParent, &index, lastElemName);
     if (result < 0) {
         printf("Invalid path. \n");
-        return NULL;
+        return -1;
     }
+    printf("Successfully parsed path. \n");
     // Create the file if it doesn't exist
     if (flags & O_CREAT) {
+        printf("Create flag specified. \n");
         if (index < 0) {
+            printf("File does not already exist. \n");
             index = firstUnusedDirEntry(retParent);
             if (index < 0) {
-                return NULL; // No more unused DEs in the parent 
+                printf("Unused DE not found in parent. \n");
+                return -1; // No more unused DEs in the parent 
             }
-            
+            printf("Found unused DE in parent directory. \n");
         }
 
     }
