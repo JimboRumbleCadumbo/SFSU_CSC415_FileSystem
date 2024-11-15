@@ -15,6 +15,13 @@
 #ifndef _B_IO_H
 #define _B_IO_H
 #include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>			// for malloc
+#include <string.h>			// for memcpy
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "structs.h"
 #include "fsPath.h"
 

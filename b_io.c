@@ -1,25 +1,18 @@
 /**************************************************************
-* Class::  CSC-415-03 Fall 2024
-* Name:: Yu-Ming Chen, Ria Thakker, Yuquan Xu, Rishita Meharishi 	
-* Student IDs:: 923313947, 922593253, 920390312, 922249026
-* GitHub-Name:: JimboRumbleCadumbo
-* Group-Name:: Bytes Busters
-* Project:: Basic File System
-*
-* File:: b_io.c
-*
-* Description:: Basic File System - Key File I/O Operations
-*
-**************************************************************/
+ * Class::  CSC-415-03 Fall 2024
+ * Name:: Yu-Ming Chen, Ria Thakker, Yuquan Xu, Rishita Meharishi
+ * Student IDs:: 923313947, 922593253, 920390312, 922249026
+ * GitHub-Name:: JimboRumbleCadumbo
+ * Group-Name:: Bytes Busters
+ * Project:: Basic File System
+ *
+ * File:: b_io.c
+ *
+ * Description:: Basic File System - Key File I/O Operations
+ *
+ **************************************************************/
 // Rishita to work on read and seek
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>			// for malloc
-#include <string.h>			// for memcpy
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include "b_io.h"
 
 #include "fsLow.h"
@@ -30,9 +23,9 @@
 
 typedef struct b_fcb
 {
-    char *buf;    // holds the open file buffer
-    int index;    // holds the current position in the buffer
-    int buflen;   // holds how many valid bytes are in the buffer
+    char *buf;          // holds the open file buffer
+    int index;          // holds the current position in the buffer
+    int buflen;         // holds how many valid bytes are in the buffer
     int fileDescriptor; // file descriptor
     int filePointer;    // current position in the file
     int fileSize;       // size of the file
@@ -41,7 +34,7 @@ typedef struct b_fcb
 
 b_fcb fcbArray[MAXFCBS];
 
-int startup = 0;    // Indicates that this has not been initialized
+int startup = 0; // Indicates that this has not been initialized
 
 // Method to initialize our file system
 void b_init()
@@ -62,10 +55,10 @@ b_io_fd b_getFCB()
     {
         if (fcbArray[i].buf == NULL)
         {
-            return i;        // Not thread safe (But do not worry about it for this assignment)
+            return i; // Not thread safe (But do not worry about it for this assignment)
         }
     }
-    return (-1);  // all in use
+    return (-1); // all in use
 }
 
 // Interface to open a buffered file
@@ -73,69 +66,102 @@ b_io_fd b_getFCB()
 // O_RDONLY, O_WRONLY, or O_RDWR
 b_io_fd b_open(char *filename, int flags)
 {
+
+    if (startup == 0)
+    {
+        b_init(); // Initialize our system
+    }
+
     printf("Starting open function. \n");
     b_io_fd returnFd;
 
     //*** TODO ***:  Modify to save or set any information needed
     //
     //
-    DE *retParent; 
+    DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-     printf("Parsing path. \n");
+    printf("Parsing path. \n");
     int result = parsePath(filename, &retParent, &index, lastElemName);
-    if (result < 0) {
+    if (result < 0)
+    {
         printf("Invalid path. \n");
         return -1;
     }
     printf("Successfully parsed path. \n");
+    printf("Allocating memory for FCB. \n");
+        b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
+        if (fcb == NULL)
+        {
+            printf("Error allocating memory for FCB.\n");
+            return -1;
+        }
+    time_t now = time(NULL);
     // Create the file if it doesn't exist
-    if (flags & O_CREAT) {
+    if (flags & O_CREAT)
+    {
         printf("Create flag specified. \n");
-        if (index < 0) {
+        if (index < 0)
+        {
             printf("File does not already exist. \n");
             index = firstUnusedDirEntry(retParent);
-            if (index < 0) {
+            if (index < 0)
+            {
                 printf("Unused DE not found in parent. \n");
-                return -1; // No more unused DEs in the parent 
+                free(fcb);
+                return -1; // No more unused DEs in the parent
             }
             printf("Found unused DE in parent directory. \n");
+            printf("Populating DE in parent directory. \n");
+            strcpy(retParent[index].name, lastElemName);
+            retParent[index].size = 0;
+            retParent[index].location = 0;
+            retParent[index].timeCreated = now;
+            retParent[index].isDirectory = 0;
         }
-
+        retParent[index].timeModified = now;
+        fcb->blockSize = vcb->blockSize;
+        fcb->index = 0;
     }
-    
 
-    if (startup == 0) b_init();  // Initialize our system
+    returnFd = b_getFCB(); // get our own file descriptor
+                           // check for error - all used FCB's
+    if (returnFd < 0) {
+        printf("All available FCBs are used.\n");
+        free(fcb);
+        return -1;
+    }
 
-    returnFd = b_getFCB();                // get our own file descriptor
-                                          // check for error - all used FCB's
+    fcb->fileDescriptor = returnFd;
 
-    return (returnFd);                        // all set
+    return (returnFd); // all set
 }
 
-// Interface to seek function    
+// Interface to seek function
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
-    if (startup == 0) b_init();  // Initialize our system
+    if (startup == 0)
+        b_init(); // Initialize our system
 
     // check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        return (-1);                     // invalid file descriptor
+        return (-1); // invalid file descriptor
     }
 
     return (0); // Change this
 }
 
-// Interface to write function    
+// Interface to write function
 int b_write(b_io_fd fd, char *buffer, int count)
 {
-    if (startup == 0) b_init();  // Initialize our system
+    if (startup == 0)
+        b_init(); // Initialize our system
 
     // check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        return (-1);                     // invalid file descriptor
+        return (-1); // invalid file descriptor
     }
 
     return (0); // Change this
@@ -149,7 +175,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 //        size chunks needed to fill the callers request.  This represents the number of
 //        bytes in multiples of the blocksize.
 // Part 3 is a value less than blocksize which is what remains to copy to the callers buffer
-//        after fulfilling part 1 and part 2.  This would always be filled from a refill 
+//        after fulfilling part 1 and part 2.  This would always be filled from a refill
 //        of our buffer.
 //  +-------------+------------------------------------------------+--------+
 //  |             |                                                |        |
@@ -163,12 +189,13 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-    if (startup == 0) b_init();  // Initialize our system
+    if (startup == 0)
+        b_init(); // Initialize our system
 
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        return -1;  // Invalid file descriptor
+        return -1; // Invalid file descriptor
     }
 
     // Get the file control block
@@ -177,14 +204,14 @@ int b_read(b_io_fd fd, char *buffer, int count)
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
     {
-        return -1;  // File not open
+        return -1; // File not open
     }
 
     // Calculate the number of bytes to read
     int bytesToRead = count;
     if (fcb->filePointer + bytesToRead > fcb->fileSize)
     {
-        bytesToRead = fcb->fileSize - fcb->filePointer;  // Adjust bytes to read if it exceeds file size
+        bytesToRead = fcb->fileSize - fcb->filePointer; // Adjust bytes to read if it exceeds file size
     }
 
     int totalBytesRead = 0;
@@ -227,36 +254,42 @@ int b_read(b_io_fd fd, char *buffer, int count)
     return totalBytesRead;
 }
 
-// Interface to Close the file    
+// Interface to Close the file
 int b_close(b_io_fd fd)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
+    printf("Starting close. \n");
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        return -1;  // Invalid file descriptor
+        printf("Invalid file descriptor passed. \n");
+        return -1; // Invalid file descriptor
     }
 
     // Get the file control block
+    printf("Getting the FCB. \n");
     b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
     {
-        return -1;  // File not open
+        printf("File is not open. \n");
+        return -1; // File not open
     }
 
     // Free the buffer
     if (fcb->buf != NULL)
     {
+        printf("Freeing the buffer. \n");
         free(fcb->buf);
         fcb->buf = NULL;
     }
 
     // Reset the file control block
+    printf("Resetting FCB. \n");
     fcb->fileDescriptor = -1;
     fcb->filePointer = 0;
     fcb->fileSize = 0;
     fcb->blockSize = 0;
 
-    return 0;  // Success
+    return 0; // Success
 }
