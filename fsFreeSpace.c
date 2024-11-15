@@ -24,8 +24,10 @@
  * 
  * Description: Initializes the FAT table
  * 
- * @param blocksSize size of each block
- * @param numBlocks number of blocks to write
+ * @param blocksSize The size of each block
+ * @param numBlocks The number of blocks to write
+ * @return 1 if success (also the starting block number of the FAT table), -1 if
+ * failed.
  */
 int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT

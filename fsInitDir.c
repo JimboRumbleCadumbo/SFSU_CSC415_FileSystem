@@ -8,8 +8,8 @@
 *
 * File:: fsInitDir.c
 *
-* Description:: This file is part of the  File System project.
-* Itcontains functions for managing directories.
+* Description:: This file contains functions to initialize and write 
+* directories, including the root directory and the normal directories.
 *
 **************************************************************/
 
@@ -24,6 +24,7 @@
  * 
  * @param numEntries Number of entries that we want to create
  * @param parent The pointer to the parent struct, need this to connect the ".."
+ * @return The DE structure of the new directory created
  */
 DE * createDirectory(int numEntries, DE *parent) {
     // Allocate memory by determining bytes needed & determining block boundaries
@@ -81,9 +82,10 @@ DE * createDirectory(int numEntries, DE *parent) {
 /**
  * int writeDir(DE *dir)
  * 
- * Description: Write the directory to the disk
+ * Description: Write the given directory to the disk.
  * 
- * @param dir Target directory
+ * @param dir Target directory that we wish to write
+ * @return The number of blocks that got written into disk.
  */
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;

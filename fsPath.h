@@ -6,7 +6,7 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: fsInitDir.h
+* File:: fsPath.h
 *
 * Description:: This file contains the Header for fsPath.c
 *

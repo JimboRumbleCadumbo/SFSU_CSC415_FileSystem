@@ -21,10 +21,11 @@
 /**
  * int allocateBlocks(int numBlocks)
  * 
- * Description: Allocate a chain of blocks, chain them together, and write a
- * END_OF_CHAIN at the last block of chain.
+ * Description: Allocate a chain of blocks, chain them together, write a
+ * END_OF_CHAIN at the last block of chain, then update the FAT table.
  * 
- * @param numBlocks the number of blocks that need to be allocated
+ * @param numBlocks The number of blocks that need to be allocated
+ * @return The starting block of the chain
  */
 int allocateBlocks(int numBlocks) {
 
@@ -76,10 +77,11 @@ int allocateBlocks(int numBlocks) {
  * int releaseBlocks(int numToRelease, int startingBlock)
  * 
  * Description: Releasing a number of blocks, or delinking, from the chain of 
- * blocks
+ * blocks.
  * 
  * @param numToRelease Number of blocks to be released
  * @param startingBlock The block location to start releasing from
+ * @return The first free space location in the VCB
  */
 int releaseBlocks(int numToRelease, int startingBlock) {
     printf("Releasing %d blocks starting from block %d...\n", numToRelease, startingBlock);

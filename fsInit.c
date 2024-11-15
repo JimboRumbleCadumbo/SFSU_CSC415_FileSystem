@@ -41,6 +41,10 @@ char cwdString[MAX_PATH_LENGTH] = "";
  * into the disk; if the signature matches, read metadata off from the disk into
  * memory.
  *
+ * @param numberOfBlocks The number of blocks (aka storage) that we wish to give
+ * to the file system.
+ * @param blockSize The size of each block.
+ * @return 0 if success, -1 if failed.
  */
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {

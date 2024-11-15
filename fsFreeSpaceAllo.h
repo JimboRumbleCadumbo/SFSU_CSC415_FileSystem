@@ -6,7 +6,7 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: fsFreeSpaceAllo.c
+* File:: fsFreeSpaceAllo.h
 *
 * Description:: This file contains the Header for fsFreeSpaceAllo.c
 *

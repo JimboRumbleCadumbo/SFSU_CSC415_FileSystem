@@ -6,14 +6,23 @@
 * Group-Name:: Bytes Busters
 * Project:: Basic File System
 *
-* File:: fsInitDir.h
+* File:: fsInitDir.c
 *
-* Description:: This file contains the Header for fsDirUtility.c
+* Description:: Helper funtions to help dealing with actions relating
+* to directory entries.
 *
 **************************************************************/
 
 #include "fsDirUtility.h"
 
+/**
+ * void freeDir (DE *dir) 
+ * 
+ * Description: Free target directory entry. (Note: doesn't free root & current 
+ * working directory)
+ * 
+ * @param dir The DE structure to be freed
+ */
 void freeDir (DE *dir) {
     // Selective free: don't free root or current working dir
     if (dir == NULL || dir == root || dir == cwd) {
@@ -22,6 +31,14 @@ void freeDir (DE *dir) {
     free(dir);
 }
 
+/**
+ * DE * loadDir(DE *dir)
+ * 
+ * Description: Loads a directory entry from the disk.
+ * 
+ * @param dir The directory TO BE read
+ * @return The directory that GOT read
+ */
 DE * loadDir(DE *dir) {
     if (dir == NULL || dir->isDirectory != 1) {
         return NULL; // Invalid argument
@@ -41,6 +58,16 @@ DE * loadDir(DE *dir) {
     return new;
 }
 
+/**
+ * int findInDir(DE *parent, char *name) 
+ * 
+ * Description: Find the directory that has the required name in the paramater 
+ * from the parent directory.
+ * 
+ * @param parent The directory entry that we are searaching from
+ * @param name The name of the DE that we wish to find in parent
+ * @return The index of the DE if found, -1 if not found
+ */
 int findInDir(DE *parent, char *name) {
     if (parent == NULL || name == NULL) {
         return -2; // sentinel value for invalid input args
@@ -57,6 +84,14 @@ int findInDir(DE *parent, char *name) {
     return -1; // Directory not found
 }
 
+/**
+ * int firstUnusedDirEntry(DE *parent)
+ * 
+ * Description: Find the first unused directory entry.
+ * 
+ * @param parent The directory entry that we wish to look from
+ * @return the index of the first unused entry, -1 if all entries are occupied.
+ */
 int firstUnusedDirEntry(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 0; i < numEntries; i++) {
@@ -67,6 +102,14 @@ int firstUnusedDirEntry(DE *parent) {
     return -1; // All entries used
 }
 
+/**
+ * int isDirEmpty(DE *parent)
+ * 
+ * Description: Check if the directory entry is empty.
+ * 
+ * @param parent The directory that we wish to check
+ * @return 0 if the directory is empty, 1 if not.
+ */
 int isDirEmpty(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 2; i < numEntries; i++) {
