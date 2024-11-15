@@ -78,6 +78,26 @@ b_io_fd b_open(char *filename, int flags)
     //*** TODO ***:  Modify to save or set any information needed
     //
     //
+    DE *retParent; 
+    int index = 0;
+    char lastElemName[MAX_NAME_LENGTH];
+    int result = parsePath(filename, &retParent, &index, &lastElemName);
+    if (result < 0) {
+        printf("Invalid path. \n");
+        return NULL;
+    }
+    // Create the file if it doesn't exist
+    if (flags & O_CREAT) {
+        if (index < 0) {
+            index = firstUnusedDirEntry(retParent);
+            if (index < 0) {
+                return NULL; // No more unused DEs in the parent 
+            }
+            
+        }
+
+    }
+    
 
     if (startup == 0) b_init();  // Initialize our system
 
