@@ -22,10 +22,12 @@
  * int discontinuousWrite(int startingBlock, void *buffer)
  * 
  * Description: By utilizing the LBAwrite function, this function is made to
- * write data one block at a time, until the last block in the chain.
+ * write data one block at a time discontinuouslly, until the last block in the 
+ * chain.
  * 
- * @param startingBlock the block address that we wish to start writing from
- * @param buffer pointer pointing to the start of the block chain.
+ * @param startingBlock The block address that we wish to start writing from
+ * @param buffer The pointer pointing to the start of the block chain.
+ * @return The number of blocks WRITTEN into the FAT table
  */
 int discontinuousWrite(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
@@ -47,10 +49,12 @@ int discontinuousWrite(int startingBlock, void *buffer) {
  * int discontinuousRead(int startingBlock, void *buffer)
  * 
  * Description: By utilizing the LBAwrite function, this function is made to
- * read data one block at a time, until the last block in the chain.
+ * read data one block at a time discontinuouslly, until the last block in the 
+ * chain.
  * 
- * @param startingBlock the block address that we wish to start reading from
- * @param buffer pointer pointing to the start of the block chain.
+ * @param startingBlock The block address that we wish to start reading from
+ * @param buffer The pointer pointing to the start of the block chain.
+ * @return The number of blocks READ from the FAT table
  */
 int discontinuousRead(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
@@ -67,9 +71,67 @@ int discontinuousRead(int startingBlock, void *buffer) {
 }
 
 /**
+ * int extendChain(int numBlocksToExtend, int startingBlock)
+ * 
+ * Description: Extends the FAT chain by the number of numBlocksToExtend.
+ * 
+ * @param numBlocksToExtend The number of blocks to extend from the chain
+ * @param startingBlock The block location to start releasing from
+ * @return 0 for success, -1 for error.
+ */
+int extendChain(int numBlocksToExtend, int startingBlock){
+    int currentBlock = startingBlock;
+
+    while(fat[currentBlock] != END_OF_CHAIN){
+        currentBlock++;
+        currentBlock = fat[currentBlock];
+    }
+
+    fat[currentBlock] = vcb->freeSpaceLoc;
+    int result = allocateBlocks(numBlocksToExtend);
+    if (result < 0) {
+        printf("Error allocating blocks.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
+ * int reduceChain(int numBlocksToReduce, int startingBlock)
+ * 
+ * Description: Reduce the FAT chain by the number of numBlocksToReduce.
+ * 
+ * @param numBlocksToReduce The number of blocks to reduce from the chain
+ * @param startingBlock The block location to start releasing from
+ * @return 0 for success, -1 for error.
+ */
+int reduceChain(int numBlocksToReduce, int startingBlock){
+    int currentBlock = startingBlock;
+
+    while(fat[currentBlock] != END_OF_CHAIN){
+        currentBlock++;
+        currentBlock = fat[currentBlock];
+    }
+    
+    currentBlock -= numBlocksToReduce;
+    fat[currentBlock] = END_OF_CHAIN;
+
+    int release = releaseBlocks(numBlocksToReduce, currentBlock + 1);
+    if(release < 0){
+        printf("Error releasing blocks.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+/**
  * int writeFAT() 
  * 
  * Description: This function is for writing the FAT table to the disk.
+ * 
+ * @return The number blocks written into the FAR table.
  */
 int writeFAT() {
     int numFATBlocks = ((vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1))/vcb->blockSize;

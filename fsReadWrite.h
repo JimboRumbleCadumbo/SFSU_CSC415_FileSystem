@@ -15,6 +15,7 @@
 #define FSREADWRITE_H
 #include "structs.h"
 #include "fsLow.h"
+#include "fsFreeSpaceAllo.h"
 
 int discontinuousWrite(int startingBlock, void *buffer);
 int discontinuousRead(int startingBlock, void *buffer); 
