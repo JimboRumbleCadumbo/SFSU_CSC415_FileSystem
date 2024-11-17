@@ -11,7 +11,7 @@
  * Description:: Basic File System - Key File I/O Operations
  *
  **************************************************************/
-// Rishita to work on read, seek and close
+// Rishita to work on read, seek ,close and write
 
 #include "b_io.h"
 
@@ -61,9 +61,7 @@ b_io_fd b_getFCB()
     return (-1); // all in use
 }
 
-// Interface to open a buffered file
-// Modification of interface for this assignment, flags match the Linux flags for open
-// O_RDONLY, O_WRONLY, or O_RDWR
+
 b_io_fd b_open(char *filename, int flags)
 {
 
@@ -438,3 +436,35 @@ int b_close(b_io_fd fd)
 
     return 0; // Success
 }
+
+// Main function to test the file system
+// This function tests the basic file operations of your file system. 
+//It opens a file named "example.txt" for writing, writes the string 
+//"Hello, World!" to it, and then closes the file. It also checks for errors 
+//during the open and write operations and prints appropriate messages.
+
+int TestOpenWrite()
+{
+    b_io_fd fd = b_open("example.txt", O_WRONLY | O_CREAT);
+    if (fd >= 0)
+    {
+        char data[] = "Hello, World!";
+        int bytesWritten = b_write(fd, data, sizeof(data) - 1);
+        if (bytesWritten < 0)
+        {
+            printf("Error writing to file.\n");
+        }
+        else
+        {
+            printf("Successfully written %d bytes.\n", bytesWritten);
+        }
+        b_close(fd);
+    }
+    else
+    {
+        printf("Error opening file.\n");
+    }
+
+    return 0;
+}
+
