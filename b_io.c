@@ -11,7 +11,6 @@
  * Description:: Basic File System - Key File I/O Operations
  *
  **************************************************************/
-// Rishita to work on read, seek ,close and write
 
 #include "b_io.h"
 
@@ -28,8 +27,9 @@ typedef struct b_fcb
     int buflen;         // holds how many valid bytes are in the buffer
     int fileDescriptor; // file descriptor
     int filePointer;    // current position in the file
-    int fileSize;       // size of the file
+    int fileSize;       // size of the file in bytes
     int blockSize;      // size of a block
+    int currentBlk;     // the location of the current block
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -154,6 +154,7 @@ b_io_fd b_open(char *filename, int flags)
     fcb.fileDescriptor = returnFd;
     retParent[index].timeModified = now;
     fcb.blockSize = vcb->blockSize;
+    fcb.currentBlk = retParent[index].location;
     char *buf = malloc(B_CHUNK_SIZE);
     if (buf == NULL)
     {
@@ -265,54 +266,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     int bytesWritten = 0;
 
-    while (bytesWritten < count)
-    {
-        // Space available in the buffer
-        int spaceInBuffer = fcb->blockSize - fcb->index;
-
-        // Bytes to write into the buffer
-        int bytesToBuffer = (count - bytesWritten < spaceInBuffer) ? count - bytesWritten : spaceInBuffer;
-
-        // Copy data to the buffer
-        memcpy(fcb->buf + fcb->index, buffer + bytesWritten, bytesToBuffer);
-        fcb->index += bytesToBuffer;
-        bytesWritten += bytesToBuffer;
-
-        // Flush buffer to disk if full
-        if (fcb->index == fcb->blockSize)
-        {
-            printf("Flushing buffer to disk...\n");
-            int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
-            if (blocksWritten <= 0)
-            {
-                printf("Error during discontinuous write.\n");
-                return -1; // Disk write error
-            }
-            fcb->index = 0; // Reset buffer index
-        }
-    }
-
-    // Flush any remaining data in the buffer to disk
-    if (fcb->index > 0)
-    {
-        printf("Writing remaining data to disk...\n");
-        int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
-        if (blocksWritten <= 0)
-        {
-            printf("Error writing remaining data to disk.\n");
-            return -1;
-        }
-        fcb->index = 0;
-    }
-
-    // Update file metadata
-    fcb->filePointer += bytesWritten;
-    if (fcb->filePointer > fcb->fileSize)
-    {
-        fcb->fileSize = fcb->filePointer; // Update file size if file grows
-    }
-
-    printf("Write complete. Bytes written: %d\n", bytesWritten);
     return bytesWritten;
 }
 
@@ -364,40 +317,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     }
 
     int totalBytesRead = 0;
-    while (bytesToRead > 0)
-    {
-        // Check if buffer needs to be refilled
-        if (fcb->index >= fcb->buflen)
-        {
-            // Calculate the block number to read from
-            int blockNumber = fcb->filePointer / fcb->blockSize;
-            int blockOffset = fcb->filePointer % fcb->blockSize;
 
-            // Read the block into the buffer
-            fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
-            if (fcb->buflen < 0)
-            {
-                return -1; // Error reading file
-            }
-            fcb->index = blockOffset;
-        }
-
-        // Calculate the number of bytes to copy from the buffer
-        int bytesFromBuffer = fcb->buflen - fcb->index;
-        if (bytesFromBuffer > bytesToRead)
-        {
-            bytesFromBuffer = bytesToRead;
-        }
-
-        // Copy data from the buffer to the user's buffer
-        memcpy(buffer + totalBytesRead, fcb->buf + fcb->index, bytesFromBuffer);
-
-        // Update pointers and counters
-        fcb->index += bytesFromBuffer;
-        fcb->filePointer += bytesFromBuffer;
-        totalBytesRead += bytesFromBuffer;
-        bytesToRead -= bytesFromBuffer;
-    }
 
     // Return the number of bytes read
     return totalBytesRead;
