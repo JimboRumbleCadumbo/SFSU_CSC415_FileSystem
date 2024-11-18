@@ -169,6 +169,12 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     fcbArray[returnFd] = fcb;
+    if (flags & O_APPEND) {
+        if(b_seek(returnFd, 0, SEEK_END)) {
+            printf("Seek failed.\n");
+            return -1;
+        }
+    }
     return (returnFd); // all set
 }
 
