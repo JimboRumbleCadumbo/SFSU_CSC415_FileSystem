@@ -29,7 +29,7 @@ typedef struct b_fcb
     int filePointer;    // current position in the file
     int fileSize;       // size of the file in bytes
     int blockSize;      // size of a block
-    int currentBlk;     // the location of the current block
+    int currentBlk;     // location of the current block
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -291,6 +291,14 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 int b_read(b_io_fd fd, char *buffer, int count)
 {
+    int blocksRead;
+    int bytesRead;
+    int bytesReturned;
+    int part1, part2, part3;
+    int numBlocksToCopy;
+    int remainingBytesInMyBuffer;
+
+    
     if (startup == 0)
         b_init(); // Initialize our system
 
@@ -301,26 +309,78 @@ int b_read(b_io_fd fd, char *buffer, int count)
     }
 
     // Get the file control block
-    b_fcb *fcb = &fcbArray[fd];
+    b_fcb fcb = fcbArray[fd];
 
     // Check if the file is open
-    if (fcb->fileDescriptor == -1)
+    if (fcb.fileDescriptor == -1 || fcb.buf == NULL)
     {
         return -1; // File not open
     }
 
-    // Calculate the number of bytes to read
-    int bytesToRead = count;
-    if (fcb->filePointer + bytesToRead > fcb->fileSize)
-    {
-        bytesToRead = fcb->fileSize - fcb->filePointer; // Adjust bytes to read if it exceeds file size
+    // Calculate bytes available in the buffer
+    remainingBytesInMyBuffer = fcb.buflen - fcb.index;
+
+    // Handle EOF by limiting count to the filesize
+    int amountAlreadyDelivered = (fcb.currentBlk * B_CHUNK_SIZE) - remainingBytesInMyBuffer;
+    if ((count + amountAlreadyDelivered ) > fcb.fileSize) {
+        count = fcb.fileSize - amountAlreadyDelivered;
+        if (count < 0) {
+            printf("Error: negative count\n");
+            return -1;
+        }
     }
 
-    int totalBytesRead = 0;
+    // part 1 is currently in the buffer and available to satisfy the request
+    if (remainingBytesInMyBuffer >= count) {  // Entire request is satisfied by buffer amount
+        part1 = count;
+        part2 = 0; // Do not need to load anything else
+        part3 = 0;
+    } else { // Give the caller the rest of the buffer & calculate pt2 and 3
+        part1 = remainingBytesInMyBuffer;
+        part3 = count - remainingBytesInMyBuffer;
 
+        // If there are blocks we can copy directly to the user's buffer, calculate this
+        numBlocksToCopy = part3 / B_CHUNK_SIZE;
+        part2 = numBlocksToCopy * B_CHUNK_SIZE;
 
-    // Return the number of bytes read
-    return totalBytesRead;
+        // Set part3 to the remaining bytes left to copy
+        // Part3 will be loaded into the intermediary buffer rather than the user's buf directly
+        part3 -= part2;
+    }
+
+    if (part1 > 0) { // Copy part1 bytes to user buffer and increment internal buffer position
+        memcpy(buffer, fcb.buf + fcb.index, part1);
+        fcb.index += part1;
+    }
+    if (part2 > 0) { // Read from disk directly to user buffer
+        blocksRead = discontinuousPartialRead(fcb.currentBlk, buffer+part1, numBlocksToCopy);
+        // Get the location of the new current block
+        for (int i = 0; i < numBlocksToCopy; i++) {
+            fcb.currentBlk = fat[fcb.currentBlk];
+        }
+        // Update with the actual value of how much was read
+        part2 = blocksRead * B_CHUNK_SIZE;
+    }
+    if (part3 > 0) { // Need to load the intermediary buffer
+        blocksRead = discontinuousPartialRead(fcb.currentBlk, fcb.buf, 1);
+        // Update with the actual value of how much was read
+        bytesRead = blocksRead * B_CHUNK_SIZE;
+        fcb.currentBlk = fat[fcb.currentBlk];
+        // Reset buffer values
+        fcb.index = 0;
+        fcb.buflen = bytesRead;
+
+        if (bytesRead < part3) { // Not enough left to satisfy read request from caller
+            part3 = bytesRead;
+        }
+
+        if (part3 > 0) {
+            memcpy(buffer+part1+part2, fcb.buf + fcb.index, part3);
+            fcb.index += part3;
+        }
+    }
+    bytesReturned = part1+part2+part3;
+    return bytesReturned;
 }
 
 // Interface to Close the file
