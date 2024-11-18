@@ -71,6 +71,81 @@ int discontinuousRead(int startingBlock, void *buffer) {
 }
 
 /**
+ * int discontinuousPartialWrite(int startingBlock, void *buffer, int numBlocksToWrite)
+ * 
+ * Description: This funtion is similar to discontinuousWrite, with an extra 
+ * parameter to specifiy the amount of blocks to write.
+ * 
+ * @param startingBlock The block address that we wish treado start reading from
+ * @param buffer The pointer pointing to the start of the block chain
+ * @param numBlocksToWrite The number of blocks to WRITE from the block chain
+ * @return The number of blocks READ from the FAT table
+ */
+int discontinuousPartialWrite(int startingBlock, void *buffer, int numBlocksToWrite) {
+    int currentBlock = startingBlock;
+    int writeCount = numBlocksToWrite;
+    int bytesWritten = 0;
+    int writeReturn = 0;
+
+    while (numBlocksToWrite > 0){
+        writeReturn = LBAwrite(buffer + bytesWritten, 1, currentBlock);
+        if(writeReturn < 0){
+            printf("LBAwrite Error......\n");
+            return -1;
+        }
+        bytesWritten += vcb->blockSize;
+        currentBlock = fat[currentBlock];
+        writeCount--;
+    }
+
+    // Return check for ensuring
+    int blocksWritten = (bytesWritten / vcb->blockSize);
+    if (blocksWritten - numBlocksToWrite != 0){
+        printf("blocksWritten is not equal to numBlocksToWrite......\n");
+        return -1;
+    }
+
+    return blocksWritten;
+}
+
+/**
+ * int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRead)
+ * 
+ * Description: This funtion is similar to discontinuousRead, with an extra 
+ * parameter to specifiy the amount of blocks to read.
+ * 
+ * @param startingBlock The block address that we wish to start reading from
+ * @param buffer The pointer pointing to the start of the block chain
+ * @param numBlocksToRead The number of blocks to READ from the block chain
+ * @return The number of blocks READ from the FAT table
+ */
+int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRead) {
+    int currentBlock = startingBlock;
+    int readCount = numBlocksToRead;
+    int bytesRead = 0;
+    int blocksRead = 0;
+    
+    while (readCount > 0){
+        blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
+        if(blocksRead < 0){
+            printf("LBAread Error......\n");
+            return -1;
+        }
+        bytesRead += vcb->blockSize;
+        currentBlock = fat[currentBlock];
+        readCount--;
+    }
+
+    // Return check for ensuring
+    if(blocksRead - numBlocksToRead != 0){
+        printf("blocksRead is not equal to numBlocksToRead......\n");
+        return -1;
+    }
+
+    return blocksRead;
+}
+
+/**
  * int extendChain(int numBlocksToExtend, int startingBlock)
  * 
  * Description: Extends the FAT chain by the number of numBlocksToExtend.

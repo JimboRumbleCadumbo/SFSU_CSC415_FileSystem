@@ -19,5 +19,9 @@
 
 int discontinuousWrite(int startingBlock, void *buffer);
 int discontinuousRead(int startingBlock, void *buffer); 
+int discontinuousPartialWrite(int startingBlock, void *buffer, int numBlocksToWrite);
+int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRead);
+int extendChain(int numBlocksToExtend, int startingBlock);
+int reduceChain(int numBlocksToReduce, int startingBlock);
 int writeFAT();
 #endif
