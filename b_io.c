@@ -8,10 +8,40 @@
  *
  * File:: b_io.c
  *
- * Description:: Basic File System - Key File I/O Operations
+ * Description::What this files does and how it contributes to our File System project.
+ * This file (b_io.c) implements the basic file I/O operations for our 
+ * filesystem project. It provides functions to open, read, write, 
+ * seek, and close files. The file control block (FCB) structure is 
+ * used to manage open files and their associated buffers. The key 
+ * functions in this file include:
+ * 
+ * - b_init(): Initializes the file system by setting up the FCB array.
+ * - b_getFCB(): Retrieves a free FCB element.
+ * - b_open(): In our open function we are opening a file
+ *   and also make sure that the flags below work properly.
+ * O_CREAT   - Creates a new file is it does not exist (ignored if the file does exist)
+ *O_TRUNC  - Set the file length to 0 (truncates all data)
+ *O_APPEND   - Sets the file position to the end of the file 
+ *(Same as doing a seek 0 from SEEK_END)
+ *O_RDONLY   - File can only do read/seek operations
+ *O_WRONLY  - File can only do write/seek operations
+ *O_RDWR   - File can be read or written to 
+ *   necessary, and returns a file descriptor.
+ * - b_read(): Reads data from an open file into a buffer.
+ * - b_write(): Writes data from a buffer to an open file.
+ * - b_seek(): Changes the file pointer position for an open file.
+ * - b_close(): Closes an open file and frees associated resources.
+ * 
+ * These functions work together to provide a basic interface for 
+ * file operations, allowing users to interact with the filesystem 
+ * by opening, reading, writing, seeking, and closing files. The 
+ * implementation ensures that data is buffered efficiently and 
+ * handles various file operations correctly.
  *
  **************************************************************/
+// Rishita to work on read, seek ,close and write
 
+// essentil imports
 #include "b_io.h"
 
 #include "fsLow.h"
@@ -27,9 +57,8 @@ typedef struct b_fcb
     int buflen;         // holds how many valid bytes are in the buffer
     int fileDescriptor; // file descriptor
     int filePointer;    // current position in the file
-    int fileSize;       // size of the file in bytes
+    int fileSize;       // size of the file
     int blockSize;      // size of a block
-    int currentBlk;     // location of the current block
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -154,7 +183,6 @@ b_io_fd b_open(char *filename, int flags)
     fcb.fileDescriptor = returnFd;
     retParent[index].timeModified = now;
     fcb.blockSize = vcb->blockSize;
-    fcb.currentBlk = retParent[index].location;
     char *buf = malloc(B_CHUNK_SIZE);
     if (buf == NULL)
     {
@@ -170,12 +198,6 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     fcbArray[returnFd] = fcb;
-    if (flags & O_APPEND) {
-        if(b_seek(returnFd, 0, SEEK_END)) {
-            printf("Seek failed.\n");
-            return -1;
-        }
-    }
     return (returnFd); // all set
 }
 
@@ -266,6 +288,54 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     int bytesWritten = 0;
 
+    while (bytesWritten < count)
+    {
+        // Space available in the buffer
+        int spaceInBuffer = fcb->blockSize - fcb->index;
+
+        // Bytes to write into the buffer
+        int bytesToBuffer = (count - bytesWritten < spaceInBuffer) ? count - bytesWritten : spaceInBuffer;
+
+        // Copy data to the buffer
+        memcpy(fcb->buf + fcb->index, buffer + bytesWritten, bytesToBuffer);
+        fcb->index += bytesToBuffer;
+        bytesWritten += bytesToBuffer;
+
+        // Flush buffer to disk if full
+        if (fcb->index == fcb->blockSize)
+        {
+            printf("Flushing buffer to disk...\n");
+            int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
+            if (blocksWritten <= 0)
+            {
+                printf("Error during discontinuous write.\n");
+                return -1; // Disk write error
+            }
+            fcb->index = 0; // Reset buffer index
+        }
+    }
+
+    // Flush any remaining data in the buffer to disk
+    if (fcb->index > 0)
+    {
+        printf("Writing remaining data to disk...\n");
+        int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
+        if (blocksWritten <= 0)
+        {
+            printf("Error writing remaining data to disk.\n");
+            return -1;
+        }
+        fcb->index = 0;
+    }
+
+    // Update file metadata
+    fcb->filePointer += bytesWritten;
+    if (fcb->filePointer > fcb->fileSize)
+    {
+        fcb->fileSize = fcb->filePointer; // Update file size if file grows
+    }
+
+    printf("Write complete. Bytes written: %d\n", bytesWritten);
     return bytesWritten;
 }
 
@@ -291,14 +361,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-    int blocksRead;
-    int bytesRead;
-    int bytesReturned;
-    int part1, part2, part3;
-    int numBlocksToCopy;
-    int remainingBytesInMyBuffer;
-
-    
     if (startup == 0)
         b_init(); // Initialize our system
 
@@ -309,78 +371,59 @@ int b_read(b_io_fd fd, char *buffer, int count)
     }
 
     // Get the file control block
-    b_fcb fcb = fcbArray[fd];
+    b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is open
-    if (fcb.fileDescriptor == -1 || fcb.buf == NULL)
+    if (fcb->fileDescriptor == -1)
     {
         return -1; // File not open
     }
 
-    // Calculate bytes available in the buffer
-    remainingBytesInMyBuffer = fcb.buflen - fcb.index;
-
-    // Handle EOF by limiting count to the filesize
-    int amountAlreadyDelivered = (fcb.currentBlk * B_CHUNK_SIZE) - remainingBytesInMyBuffer;
-    if ((count + amountAlreadyDelivered ) > fcb.fileSize) {
-        count = fcb.fileSize - amountAlreadyDelivered;
-        if (count < 0) {
-            printf("Error: negative count\n");
-            return -1;
-        }
+    // Calculate the number of bytes to read
+    int bytesToRead = count;
+    if (fcb->filePointer + bytesToRead > fcb->fileSize)
+    {
+        bytesToRead = fcb->fileSize - fcb->filePointer; // Adjust bytes to read if it exceeds file size
     }
 
-    // part 1 is currently in the buffer and available to satisfy the request
-    if (remainingBytesInMyBuffer >= count) {  // Entire request is satisfied by buffer amount
-        part1 = count;
-        part2 = 0; // Do not need to load anything else
-        part3 = 0;
-    } else { // Give the caller the rest of the buffer & calculate pt2 and 3
-        part1 = remainingBytesInMyBuffer;
-        part3 = count - remainingBytesInMyBuffer;
+    int totalBytesRead = 0;
+    while (bytesToRead > 0)
+    {
+        // Check if buffer needs to be refilled
+        if (fcb->index >= fcb->buflen)
+        {
+            // Calculate the block number to read from
+            int blockNumber = fcb->filePointer / fcb->blockSize;
+            int blockOffset = fcb->filePointer % fcb->blockSize;
 
-        // If there are blocks we can copy directly to the user's buffer, calculate this
-        numBlocksToCopy = part3 / B_CHUNK_SIZE;
-        part2 = numBlocksToCopy * B_CHUNK_SIZE;
-
-        // Set part3 to the remaining bytes left to copy
-        // Part3 will be loaded into the intermediary buffer rather than the user's buf directly
-        part3 -= part2;
-    }
-
-    if (part1 > 0) { // Copy part1 bytes to user buffer and increment internal buffer position
-        memcpy(buffer, fcb.buf + fcb.index, part1);
-        fcb.index += part1;
-    }
-    if (part2 > 0) { // Read from disk directly to user buffer
-        blocksRead = discontinuousPartialRead(fcb.currentBlk, buffer+part1, numBlocksToCopy);
-        // Get the location of the new current block
-        for (int i = 0; i < numBlocksToCopy; i++) {
-            fcb.currentBlk = fat[fcb.currentBlk];
-        }
-        // Update with the actual value of how much was read
-        part2 = blocksRead * B_CHUNK_SIZE;
-    }
-    if (part3 > 0) { // Need to load the intermediary buffer
-        blocksRead = discontinuousPartialRead(fcb.currentBlk, fcb.buf, 1);
-        // Update with the actual value of how much was read
-        bytesRead = blocksRead * B_CHUNK_SIZE;
-        fcb.currentBlk = fat[fcb.currentBlk];
-        // Reset buffer values
-        fcb.index = 0;
-        fcb.buflen = bytesRead;
-
-        if (bytesRead < part3) { // Not enough left to satisfy read request from caller
-            part3 = bytesRead;
+            // Read the block into the buffer
+            fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
+            if (fcb->buflen < 0)
+            {
+                return -1; // Error reading file
+            }
+            fcb->index = blockOffset;
         }
 
-        if (part3 > 0) {
-            memcpy(buffer+part1+part2, fcb.buf + fcb.index, part3);
-            fcb.index += part3;
+        // Calculate the number of bytes to copy from the buffer
+        int bytesFromBuffer = fcb->buflen - fcb->index;
+        if (bytesFromBuffer > bytesToRead)
+        {
+            bytesFromBuffer = bytesToRead;
         }
+
+        // Copy data from the buffer to the user's buffer
+        memcpy(buffer + totalBytesRead, fcb->buf + fcb->index, bytesFromBuffer);
+
+        // Update pointers and counters
+        fcb->index += bytesFromBuffer;
+        fcb->filePointer += bytesFromBuffer;
+        totalBytesRead += bytesFromBuffer;
+        bytesToRead -= bytesFromBuffer;
     }
-    bytesReturned = part1+part2+part3;
-    return bytesReturned;
+
+    // Return the number of bytes read
+    return totalBytesRead;
 }
 
 // Interface to Close the file
