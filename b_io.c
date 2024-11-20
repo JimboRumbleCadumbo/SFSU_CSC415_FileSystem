@@ -9,33 +9,33 @@
  * File:: b_io.c
  *
  * Description::What this files does and how it contributes to our File System project.
- * This file (b_io.c) implements the basic file I/O operations for our 
- * filesystem project. It provides functions to open, read, write, 
- * seek, and close files. The file control block (FCB) structure is 
- * used to manage open files and their associated buffers. The key 
+ * This file (b_io.c) implements the basic file I/O operations for our
+ * filesystem project. It provides functions to open, read, write,
+ * seek, and close files. The file control block (FCB) structure is
+ * used to manage open files and their associated buffers. The key
  * functions in this file include:
- * 
+ *
  * - b_init(): Initializes the file system by setting up the FCB array.
  * - b_getFCB(): Retrieves a free FCB element.
  * - b_open(): In our open function we are opening a file
  *   and also make sure that the flags below work properly.
  * O_CREAT   - Creates a new file is it does not exist (ignored if the file does exist)
  *O_TRUNC  - Set the file length to 0 (truncates all data)
- *O_APPEND   - Sets the file position to the end of the file 
+ *O_APPEND   - Sets the file position to the end of the file
  *(Same as doing a seek 0 from SEEK_END)
  *O_RDONLY   - File can only do read/seek operations
  *O_WRONLY  - File can only do write/seek operations
- *O_RDWR   - File can be read or written to 
+ *O_RDWR   - File can be read or written to
  *   necessary, and returns a file descriptor.
  * - b_read(): Reads data from an open file into a buffer.
  * - b_write(): Writes data from a buffer to an open file.
  * - b_seek(): Changes the file pointer position for an open file.
  * - b_close(): Closes an open file and frees associated resources.
- * 
- * These functions work together to provide a basic interface for 
- * file operations, allowing users to interact with the filesystem 
- * by opening, reading, writing, seeking, and closing files. The 
- * implementation ensures that data is buffered efficiently and 
+ *
+ * These functions work together to provide a basic interface for
+ * file operations, allowing users to interact with the filesystem
+ * by opening, reading, writing, seeking, and closing files. The
+ * implementation ensures that data is buffered efficiently and
  * handles various file operations correctly.
  *
  **************************************************************/
@@ -90,7 +90,6 @@ b_io_fd b_getFCB()
     }
     return (-1); // all in use
 }
-
 
 b_io_fd b_open(char *filename, int flags)
 {
@@ -200,7 +199,8 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     fcbArray[returnFd] = fcb;
-        if (flags & O_APPEND) {
+    if (flags & O_APPEND)
+    {
         b_seek(returnFd, 0, SEEK_END);
     }
     return (returnFd); // all set
@@ -485,7 +485,8 @@ int b_close(b_io_fd fd)
     return 0; // Success
 }
 
-int b_move(char *pathnameSrc, char *pathnameDest) {
+int b_move(char *pathnameSrc, char *pathnameDest)
+{
     DE *retParent1;
     int index1 = 0;
     char lastElemName1[MAX_NAME_LENGTH];
@@ -496,7 +497,8 @@ int b_move(char *pathnameSrc, char *pathnameDest) {
         printf("Invalid path. \n");
         return -1;
     }
-    if (index1 < 0 || retParent1[index1].isDirectory != 0) {
+    if (index1 < 0 || retParent1[index1].isDirectory != 0)
+    {
         printf("File does not exist in the specified path.\n");
         return -1;
     }
@@ -512,35 +514,50 @@ int b_move(char *pathnameSrc, char *pathnameDest) {
     }
     printf("Successfully parsed path. \n");
 
-    int index = firstUnusedDirEntry(retParent2);
-    if (index == -1) {
-        printf("No more space in the directory specified.\n");
+    printf("Loading destination directory. \n");
+    DE *destDirectory = loadDir(&retParent2[index2]);
+    if (destDirectory == NULL) {
+        printf("Error loading source directory.\n");
+        freeDir(retParent1);
+        freeDir(retParent2);
         return -1;
     }
-    // Populate DE of new parent directory
-    printf("Populating DE of new and cleared DE of old parent directory.\n");
-    strcpy(retParent2[index].name, retParent1[index1].name);
-    retParent2[index].isDirectory = 0;
-    retParent2[index].location = retParent1[index1].location;
-    retParent2[index].size = retParent1[index1].size;
-    retParent2[index].timeCreated = retParent1[index1].timeCreated;
-    retParent2[index].timeModified = time(NULL);
-    // Mark DE of old parent directory unused
+
+    printf("Finding unused directory in the destination. \n");
+    int index = firstUnusedDirEntry(destDirectory);
+    if (index < 2) {
+        printf("Error finding unused directory entry.\n");
+        freeDir(destDirectory);
+        freeDir(retParent1);
+        freeDir(retParent2);
+        return -1;
+    }
+    printf("Populating destination directory entry. \n");
+    strcpy(destDirectory[index].name, retParent1[index1].name);
+    printf("Directory name is now: %s\n", destDirectory[index].name);
+    destDirectory[index].isDirectory = 0;
+    destDirectory[index].location = retParent1[index1].location;
+    destDirectory[index].size = retParent1[index1].size;
+    destDirectory[index].timeCreated = retParent1[index1].timeCreated;
+    destDirectory[index].timeModified = time(NULL);
+    
+    printf("Populated dest. directory entry. Writing dest. directory entry.\n");
+    if (writeDir(destDirectory) < 0) {
+        printf("Error writing destination directory.\n");
+        return -1;
+    }
+    printf("Resetting old parent to be unused.\n");
     strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
-    // Clear previous data 
-    printf("Populated DE of new and cleared DE of old parent directory.\n");
-    printf("Writing source directory.\n");
+    memset(&retParent1[index1], 0, sizeof(DE));
+    printf("Writing src. directory entry.\n");
     if (writeDir(retParent1) < 0) {
-        printf("Failed to write source directory.\n");
+        printf("Error writing source directory.\n");
         return -1;
     }
-    printf("Writing source directory.\n");
-    if (writeDir(retParent2) < 0) {
-        printf("Failed to write destination directory.\n");
-        return -1;
+    if (retParent2 != destDirectory) {
+        freeDir(retParent2);
     }
+    freeDir(destDirectory);
     freeDir(retParent1);
-    freeDir(retParent2);
     return 0;
 }
-
