@@ -516,7 +516,8 @@ int b_move(char *pathnameSrc, char *pathnameDest)
 
     printf("Loading destination directory. \n");
     DE *destDirectory = loadDir(&retParent2[index2]);
-    if (destDirectory == NULL) {
+    if (destDirectory == NULL)
+    {
         printf("Error loading source directory.\n");
         freeDir(retParent1);
         freeDir(retParent2);
@@ -525,7 +526,8 @@ int b_move(char *pathnameSrc, char *pathnameDest)
 
     printf("Finding unused directory in the destination. \n");
     int index = firstUnusedDirEntry(destDirectory);
-    if (index < 2) {
+    if (index < 2)
+    {
         printf("Error finding unused directory entry.\n");
         freeDir(destDirectory);
         freeDir(retParent1);
@@ -540,21 +542,30 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     destDirectory[index].size = retParent1[index1].size;
     destDirectory[index].timeCreated = retParent1[index1].timeCreated;
     destDirectory[index].timeModified = time(NULL);
-    
+
     printf("Populated dest. directory entry. Writing dest. directory entry.\n");
-    if (writeDir(destDirectory) < 0) {
+    if (writeDir(destDirectory) < 0)
+    {
         printf("Error writing destination directory.\n");
         return -1;
     }
+    /*printf("Dumping destination directory after move:\n");
+    for (int i = 0; i < 50; i++)
+    {
+        printf("[%d] name=%s, isDirectory=%d, location=%d, size=%d\n", i,
+               destDirectory[i].name, destDirectory[i].isDirectory,
+               destDirectory[i].location, destDirectory[i].size);
+    }*/
     printf("Resetting old parent to be unused.\n");
     strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent1[index1], 0, sizeof(DE));
     printf("Writing src. directory entry.\n");
-    if (writeDir(retParent1) < 0) {
+    if (writeDir(retParent1) < 0)
+    {
         printf("Error writing source directory.\n");
         return -1;
     }
-    if (retParent2 != destDirectory) {
+    if (retParent2 != destDirectory && retParent2 != retParent1) {
         freeDir(retParent2);
     }
     freeDir(destDirectory);

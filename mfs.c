@@ -62,7 +62,6 @@ int fs_mkdir(const char *pathname, mode_t mode)
         printf("Failed to write directories.\n");
         return -1;
     }
-    //freeDir(retParent);
     printf("Success.\n");
     return 0;
 }
