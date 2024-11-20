@@ -113,6 +113,7 @@ b_io_fd b_open(char *filename, int flags)
     if (result < 0)
     {
         printf("Invalid path. \n");
+        freeDir(retParent);
         return -1;
     }
     printf("Successfully parsed path. \n");
@@ -130,6 +131,7 @@ b_io_fd b_open(char *filename, int flags)
             if (index < 0)
             {
                 printf("Unused DE not found in parent. \n");
+                freeDir(retParent);
                 return -1; // No more unused DEs in the parent
             }
             printf("Found unused DE #%d in parent directory. \n", index);
@@ -152,6 +154,7 @@ b_io_fd b_open(char *filename, int flags)
         if (index < 0)
         {
             printf("File does not exist.\n");
+            freeDir(retParent);
             return -1;
         }
         int numBytesToRelease = retParent[index].size;
@@ -160,6 +163,7 @@ b_io_fd b_open(char *filename, int flags)
         if (releaseBlocks(blocksToRelease, blocksToRelease) < 0)
         {
             printf("Error releasing blocks. \n");
+            freeDir(retParent);
             return -1;
         }
         retParent[index].size = 0;
@@ -177,6 +181,7 @@ b_io_fd b_open(char *filename, int flags)
     if (returnFd < 0)
     {
         printf("All available FCBs are used.\n");
+        freeDir(retParent);
         return -1;
     }
     printf("Modifying parent directory. \n");
@@ -188,6 +193,7 @@ b_io_fd b_open(char *filename, int flags)
     if (buf == NULL)
     {
         printf("Error allocating memory to buffer.\n");
+        freeDir(retParent);
         return -1;
     }
     fcb.buf = buf;
@@ -196,6 +202,7 @@ b_io_fd b_open(char *filename, int flags)
     {
         printf("Error writing parent directory.\n");
         free(buf);
+        freeDir(retParent);
         return -1;
     }
     fcbArray[returnFd] = fcb;
@@ -203,6 +210,7 @@ b_io_fd b_open(char *filename, int flags)
     {
         b_seek(returnFd, 0, SEEK_END);
     }
+    freeDir(retParent);
     return (returnFd); // all set
 }
 

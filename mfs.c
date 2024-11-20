@@ -49,6 +49,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     if (newDir == NULL)
     {
         printf("Creating directory failed.\n");
+        freeDir(retParent);
         return -1;
     }
     strcpy(loadedDir[idx].name, lastElemName);
@@ -60,8 +61,10 @@ int fs_mkdir(const char *pathname, mode_t mode)
     if (writeDir(loadedDir) < 1)
     {
         printf("Failed to write directories.\n");
+        freeDir(retParent);
         return -1;
     }
+    freeDir(retParent);
     printf("Success.\n");
     return 0;
 }
