@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "structs.h"
 #include "fsPath.h"
 #include "fsInitDir.h"
@@ -33,6 +34,7 @@ int b_read (b_io_fd fd, char * buffer, int count);
 int b_write (b_io_fd fd, char * buffer, int count);
 int b_seek (b_io_fd fd, off_t offset, int whence);
 int b_close (b_io_fd fd);
+int b_move(char *pathnameSrc, char *pathnameDest);
 
 #endif
 

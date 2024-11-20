@@ -197,7 +197,11 @@ b_io_fd b_open(char *filename, int flags)
         free(buf);
         return -1;
     }
+    freeDir(retParent);
     fcbArray[returnFd] = fcb;
+        if (flags & O_APPEND) {
+        b_seek(returnFd, 0, SEEK_END);
+    }
     return (returnFd); // all set
 }
 
@@ -466,34 +470,60 @@ int b_close(b_io_fd fd)
     return 0; // Success
 }
 
-// Main function to test the file system
-// This function tests the basic file operations of your file system. 
-//It opens a file named "example.txt" for writing, writes the string 
-//"Hello, World!" to it, and then closes the file. It also checks for errors 
-//during the open and write operations and prints appropriate messages.
-
-int TestOpenWrite()
-{
-    b_io_fd fd = b_open("example.txt", O_WRONLY | O_CREAT);
-    if (fd >= 0)
+int b_move(char *pathnameSrc, char *pathnameDest) {
+    DE *retParent1;
+    int index1 = 0;
+    char lastElemName1[MAX_NAME_LENGTH];
+    printf("Parsing source path. \n");
+    int result1 = parsePath(pathnameSrc, &retParent1, &index1, lastElemName1);
+    if (result1 < 0)
     {
-        char data[] = "Hello, World!";
-        int bytesWritten = b_write(fd, data, sizeof(data) - 1);
-        if (bytesWritten < 0)
-        {
-            printf("Error writing to file.\n");
-        }
-        else
-        {
-            printf("Successfully written %d bytes.\n", bytesWritten);
-        }
-        b_close(fd);
+        printf("Invalid path. \n");
+        return -1;
     }
-    else
+    if (index1 < 0 || retParent1[index1].isDirectory != 0) {
+        printf("File does not exist in the specified path.\n");
+        return -1;
+    }
+    DE *retParent2;
+    int index2 = 0;
+    char lastElemName2[MAX_NAME_LENGTH];
+    printf("Parsing destination path. \n");
+    int result2 = parsePath(pathnameDest, &retParent2, &index2, lastElemName2);
+    if (result2 < 0)
     {
-        printf("Error opening file.\n");
+        printf("Invalid path. \n");
+        return -1;
     }
+    printf("Successfully parsed path. \n");
 
+    int index = firstUnusedDirEntry(retParent2);
+    if (index == -1) {
+        printf("No more space in the directory specified.\n");
+        return -1;
+    }
+    // Populate DE of new parent directory
+    printf("Populating DE of new and cleared DE of old parent directory.\n");
+    strcpy(retParent2[index].name, retParent1[index1].name);
+    retParent2[index].isDirectory = 0;
+    retParent2[index].location = retParent1[index1].location;
+    retParent2[index].size = retParent1[index1].size;
+    retParent2[index].timeCreated = retParent1[index1].timeCreated;
+    retParent2[index].timeModified = time(NULL);
+    // Mark DE of old parent directory unused
+    retParent1[index1].name[0] = '\0';
+    // Clear previous data 
+    printf("Populated DE of new and cleared DE of old parent directory.\n");
+    if (writeDir(retParent1) < 0) {
+        printf("Failed to write source directory.\n");
+        return -1;
+    }
+    if (writeDir(retParent2) < 0) {
+        printf("Failed to write destination directory.\n");
+        return -1;
+    }
+    freeDir(retParent1);
+    freeDir(retParent2);
     return 0;
 }
 
