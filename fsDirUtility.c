@@ -43,8 +43,11 @@ DE * loadDir(DE *dir) {
     if (dir == NULL || dir->isDirectory != 1) {
         return NULL; // Invalid argument
     }
-    if (dir == root) {
+    if (dir->location == root->location) {
         return root;
+    }
+    if (dir->location == cwd->location) {
+        return cwd;
     }
     int bytesNeeded;
     int blocksNeeded = (dir->size + (vcb->blockSize - 1)) / vcb->blockSize;
