@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "b_io.h"
 #include "mfs.h"
 #include "fsLow.h"
 #include "fsFreeSpace.h"
@@ -125,6 +126,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	char *rootPath = "/";
 	strcpy(cwdString, rootPath);
 	cwdString[strlen(cwdString)] = '\0';
+	b_init();
 	return 0;
 }
 
