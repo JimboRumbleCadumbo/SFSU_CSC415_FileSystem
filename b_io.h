@@ -29,6 +29,8 @@
 
 typedef int b_io_fd;
 
+void b_init();
+b_io_fd b_getFCB();
 b_io_fd b_open (char * filename, int flags);
 int b_read (b_io_fd fd, char * buffer, int count);
 int b_write (b_io_fd fd, char * buffer, int count);
