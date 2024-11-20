@@ -54,6 +54,7 @@ typedef struct b_fcb
 {
     char *buf;          // holds the open file buffer
     int index;          // holds the current position in the buffer
+    int fileLocation;   // holds the file location on the disk
     int buflen;         // holds how many valid bytes are in the buffer
     int fileDescriptor; // file descriptor
     int filePointer;    // current position in the file
@@ -93,12 +94,6 @@ b_io_fd b_getFCB()
 
 b_io_fd b_open(char *filename, int flags)
 {
-
-    if (startup == 0)
-    {
-        b_init(); // Initialize our system
-    }
-
     printf("Starting open function. \n");
     b_io_fd returnFd;
 
@@ -138,9 +133,10 @@ b_io_fd b_open(char *filename, int flags)
             printf("Populating DE in parent directory. \n");
             strcpy(retParent[index].name, lastElemName);
             retParent[index].size = 0;
-            retParent[index].location = 0;
+            retParent[index].location = allocateBlocks(1);
             retParent[index].timeCreated = now;
             retParent[index].isDirectory = 0;
+            fcb.fileLocation = retParent[index].location;
             fcb.filePointer = 0;
             fcb.fileSize = 0;
             fcb.index = 0;
@@ -167,7 +163,8 @@ b_io_fd b_open(char *filename, int flags)
             return -1;
         }
         retParent[index].size = 0;
-        retParent[index].location = 0;
+        retParent[index].location = allocateBlocks(1);
+        fcb.fileLocation = retParent[index].location;
         fcb.filePointer = 0;
         fcb.fileSize = 0;
         fcb.index = 0;
@@ -206,8 +203,7 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     fcbArray[returnFd] = fcb;
-    if (flags & O_APPEND)
-    {
+    if (flags & O_APPEND) {
         b_seek(returnFd, 0, SEEK_END);
     }
     freeDir(retParent);
@@ -219,9 +215,6 @@ b_io_fd b_open(char *filename, int flags)
 
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
-    if (startup == 0)
-        b_init(); // Initialize our system
-
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
@@ -278,11 +271,14 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
 }
 
 // Interface to write function
+/**
+ * int b_write(b_io_fd fd, char *buffer, int count)
+ * 
+ * 
+ * TODO: Need to add extend chain for certian conditions, need more debuging
+ */
 int b_write(b_io_fd fd, char *buffer, int count)
 {
-    if (startup == 0)
-        b_init(); // Initialize the system
-
     // Validate the file descriptor
     if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
     {
@@ -306,57 +302,58 @@ int b_write(b_io_fd fd, char *buffer, int count)
         return -1;
     }
 
-    int bytesWritten = 0;
+    // start writing
+   
+    int p1RemainingBytes = B_CHUNK_SIZE - (fcb->index % B_CHUNK_SIZE);
 
-    while (bytesWritten < count)
-    {
-        // Space available in the buffer
-        int spaceInBuffer = fcb->blockSize - fcb->index;
-
-        // Bytes to write into the buffer
-        int bytesToBuffer = (count - bytesWritten < spaceInBuffer) ? count - bytesWritten : spaceInBuffer;
-
-        // Copy data to the buffer
-        memcpy(fcb->buf + fcb->index, buffer + bytesWritten, bytesToBuffer);
-        fcb->index += bytesToBuffer;
-        bytesWritten += bytesToBuffer;
-
-        // Flush buffer to disk if full
-        if (fcb->index == fcb->blockSize)
-        {
-            printf("Flushing buffer to disk...\n");
-            int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
-            if (blocksWritten <= 0)
-            {
-                printf("Error during discontinuous write.\n");
-                return -1; // Disk write error
-            }
-            fcb->index = 0; // Reset buffer index
-        }
+    // If count is smaller than the remaining bytes in the current block, write
+    // and return.
+    if (count <= p1RemainingBytes){
+        memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer, count);
+        fcb->index += count;
+        fcb->fileSize += count;
+        return count;
     }
 
-    // Flush any remaining data in the buffer to disk
-    if (fcb->index > 0)
-    {
-        printf("Writing remaining data to disk...\n");
-        int blocksWritten = discontinuousWrite(fcb->fileDescriptor, fcb->buf);
-        if (blocksWritten <= 0)
-        {
-            printf("Error writing remaining data to disk.\n");
-            return -1;
-        }
-        fcb->index = 0;
+    int p1 = 0, p2 = 0, p3 = 0;
+    char tempArr[512];
+
+    // p1
+    memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer, p1RemainingBytes);
+    p1 += p1RemainingBytes;
+    fcb->index += p1RemainingBytes;
+    fcb->fileSize += p1RemainingBytes;
+
+    // p2
+    int blocksNeeded = (count - p1) / B_CHUNK_SIZE;
+    p2 = blocksNeeded * B_CHUNK_SIZE;
+
+    int nextBlock = (fcb->fileLocation + fcb->index + 1) / B_CHUNK_SIZE;    
+    int p2Write = discontinuousPartialWrite(nextBlock, buffer + p1, blocksNeeded);
+    fcb->index += p2;
+    fcb->fileSize += p2;
+
+    if(count - p1 - p2 == 0){
+        return count;
     }
+
+    // p3
+    p3 = count - p1 - p2;
+    nextBlock = (fcb->fileLocation + fcb->index + 1) / B_CHUNK_SIZE; // Update nextBlock
+    int p3Read = discontinuousPartialRead(nextBlock, fcb->buf, 1);
+    // TODO :: add case if this is the last block, need extend chain
+    memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer + p1 + p2, p3);
+    fcb->index += p3;
+    fcb->fileSize += p3;
 
     // Update file metadata
-    fcb->filePointer += bytesWritten;
     if (fcb->filePointer > fcb->fileSize)
     {
         fcb->fileSize = fcb->filePointer; // Update file size if file grows
     }
 
-    printf("Write complete. Bytes written: %d\n", bytesWritten);
-    return bytesWritten;
+    printf("Write complete. Bytes written: %d\n", count);
+    return count;
 }
 
 // Interface to read a buffer
@@ -381,9 +378,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-    if (startup == 0)
-        b_init(); // Initialize our system
-
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
@@ -454,6 +448,12 @@ int b_read(b_io_fd fd, char *buffer, int count)
 }
 
 // Interface to Close the file
+/**
+ * int b_close(b_io_fd fd)
+ * 
+ * 
+ * TODO :: 1. Need to add update time || 2. Need to do an extra write to disk
+ */
 int b_close(b_io_fd fd)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
