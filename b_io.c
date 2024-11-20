@@ -197,7 +197,6 @@ b_io_fd b_open(char *filename, int flags)
         free(buf);
         return -1;
     }
-    freeDir(retParent);
     fcbArray[returnFd] = fcb;
         if (flags & O_APPEND) {
         b_seek(returnFd, 0, SEEK_END);
@@ -511,13 +510,15 @@ int b_move(char *pathnameSrc, char *pathnameDest) {
     retParent2[index].timeCreated = retParent1[index1].timeCreated;
     retParent2[index].timeModified = time(NULL);
     // Mark DE of old parent directory unused
-    retParent1[index1].name[0] = '\0';
+    strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
     // Clear previous data 
     printf("Populated DE of new and cleared DE of old parent directory.\n");
+    printf("Writing source directory.\n");
     if (writeDir(retParent1) < 0) {
         printf("Failed to write source directory.\n");
         return -1;
     }
+    printf("Writing source directory.\n");
     if (writeDir(retParent2) < 0) {
         printf("Failed to write destination directory.\n");
         return -1;
