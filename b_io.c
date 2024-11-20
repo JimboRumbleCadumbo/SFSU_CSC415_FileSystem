@@ -59,6 +59,7 @@ typedef struct b_fcb
     int filePointer;    // current position in the file
     int fileSize;       // size of the file
     int blockSize;      // size of a block
+    int accessFlags;    // flags for O_RDONLY, O_WRONLY, O_RDWR
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -181,6 +182,7 @@ b_io_fd b_open(char *filename, int flags)
     }
     printf("Modifying parent directory. \n");
     fcb.fileDescriptor = returnFd;
+    fcb.accessFlags = flags;
     retParent[index].timeModified = now;
     fcb.blockSize = vcb->blockSize;
     char *buf = malloc(B_CHUNK_SIZE);
@@ -282,6 +284,13 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     b_fcb *fcb = &fcbArray[fd];
 
+    // Check if the file is read-only
+    if (fcb->accessFlags & O_RDONLY)
+    {
+        printf("Error: File is read-only. Cannot write to it.\n");
+        return -1;
+    }
+
     // Check if the file is writable
     if (fcb->fileDescriptor < 0)
     {
@@ -375,6 +384,13 @@ int b_read(b_io_fd fd, char *buffer, int count)
 
     // Get the file control block
     b_fcb *fcb = &fcbArray[fd];
+
+    // Check if the file is write-only
+    if (fcb->accessFlags & O_WRONLY)
+    {
+        printf("Error: File is write-only. Cannot read from it.\n");
+        return -1;
+    }
 
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
