@@ -48,7 +48,7 @@
 #include <stdlib.h>
 
 #define MAXFCBS 20
-#define B_CHUNK_SIZE 512
+#define B_CHUNK_SIZE vcb->blockSize
 
 typedef struct b_fcb
 {
