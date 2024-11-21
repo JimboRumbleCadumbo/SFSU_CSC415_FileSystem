@@ -59,6 +59,7 @@ typedef struct b_fcb
     int fileSize;       // size of the file
     int blockSize;      // size of a block
     int accessFlags;    // flags for O_RDONLY, O_WRONLY, O_RDWR
+    DE *directoryEntry; // pointer to the directory entry
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -139,6 +140,7 @@ b_io_fd b_open(char *filename, int flags)
             fcb.fileSize = 0;
             fcb.index = 0;
             fcb.buflen = 0;
+            fcb.directoryEntry = retParent;
         }
     }
     // Truncate existing file
@@ -182,7 +184,6 @@ b_io_fd b_open(char *filename, int flags)
     printf("Modifying parent directory. \n");
     fcb.fileDescriptor = returnFd;
     fcb.accessFlags = flags;
-    retParent[index].timeModified = now;
     fcb.blockSize = vcb->blockSize;
     char *buf = malloc(B_CHUNK_SIZE);
     if (buf == NULL)
@@ -339,7 +340,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     p3 = count - p1 - p2;
     nextBlock = (fcb->fileLocation + fcb->index + 1) / B_CHUNK_SIZE; // Update nextBlock
     int p3Read = discontinuousPartialRead(nextBlock, fcb->buf, 1);
-    // TODO :: add case if this is the last block, need extend chain
     memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer + p1 + p2, p3);
     fcb->index += p3;
     fcb->fileSize += p3;
@@ -351,6 +351,8 @@ int b_write(b_io_fd fd, char *buffer, int count)
     }
 
     printf("Write complete. Bytes written: %d\n", count);
+    time_t now = time(NULL);
+    fcb->directoryEntry->timeModified = now;
     return count;
 }
 
