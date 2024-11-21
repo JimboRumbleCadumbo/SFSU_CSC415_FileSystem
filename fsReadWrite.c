@@ -146,6 +146,23 @@ int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRea
 }
 
 /**
+ * int moveBlockIndex(int startingBlock, int numBlocksToMove)
+ * 
+ * Description: Moves the block index by the number of blocks specified
+ * 
+ * @param startingBlock The block index to start at
+ * @param numBlocksToMove The number of blocks to move
+ * @return The new block index
+ */
+int moveBlockIndex(int startingBlock, int numBlocksToMove) {
+    for (int i = 0; i < numBlocksToMove; i++) {
+        startingBlock = fat[startingBlock];
+    }
+    
+    return startingBlock;
+}
+
+/**
  * int extendChain(int numBlocksToExtend, int startingBlock)
  * 
  * Description: Extends the FAT chain by the number of numBlocksToExtend.
