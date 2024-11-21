@@ -33,10 +33,16 @@ int discontinuousWrite(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesWritten = 0;
 
+    int i = 0;
     while (fat[currentBlock] != END_OF_CHAIN) {
         LBAwrite(buffer + bytesWritten, 1, currentBlock);
         bytesWritten += vcb->blockSize;
         currentBlock = fat[currentBlock];
+        i++;
+        if(i > vcb->numBlocks){
+            printf("\nExceeding vcb numBlocks, EOC not found.\n");
+            return -1;
+        }
     }
 
     LBAwrite(buffer + bytesWritten, 1, currentBlock);
@@ -60,10 +66,16 @@ int discontinuousRead(int startingBlock, void *buffer) {
     int currentBlock = startingBlock;
     int bytesRead = 0;
 
+    int i = 0;
     while (fat[currentBlock] != END_OF_CHAIN) {
         LBAread(buffer + bytesRead, 1, currentBlock);
         bytesRead += vcb->blockSize;
         currentBlock = fat[currentBlock];
+        i++;
+        if(i > vcb->numBlocks){
+            printf("\nExceeding vcb numBlocks, EOC not found.\n");
+            return -1;
+        }
     }
 
     int blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
