@@ -25,10 +25,11 @@
  */
 void freeDir (DE *dir) {
     // Selective free: don't free root or current working dir
-    if (dir == NULL || dir == root || dir == cwd) {
+    if (dir == NULL || dir->location == root->location || dir->location == cwd->location) {
         return;
     }
     free(dir);
+    dir = NULL;
 }
 
 /**

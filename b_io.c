@@ -39,9 +39,7 @@
  * handles various file operations correctly.
  *
  **************************************************************/
-// Rishita to work on read, seek ,close and write
-
-// essentil imports
+// essential imports
 #include "b_io.h"
 
 #include "fsLow.h"
