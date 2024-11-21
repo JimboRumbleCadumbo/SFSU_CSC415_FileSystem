@@ -168,7 +168,7 @@ int moveBlockIndex(int startingBlock, int numBlocksToMove) {
  * Description: Extends the FAT chain by the number of numBlocksToExtend.
  * 
  * @param numBlocksToExtend The number of blocks to extend from the chain
- * @param startingBlock The block location to start releasing from
+ * @param startingBlock The head of the chain to start extending from
  * @return 0 for success, -1 for error.
  */
 int extendChain(int numBlocksToExtend, int startingBlock){
@@ -195,7 +195,7 @@ int extendChain(int numBlocksToExtend, int startingBlock){
  * Description: Reduce the FAT chain by the number of numBlocksToReduce.
  * 
  * @param numBlocksToReduce The number of blocks to reduce from the chain
- * @param startingBlock The block location to start releasing from
+ * @param startingBlock The head of the chain to start releasing from
  * @return 0 for success, -1 for error.
  */
 int reduceChain(int numBlocksToReduce, int startingBlock){
