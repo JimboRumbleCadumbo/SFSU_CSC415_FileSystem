@@ -90,6 +90,7 @@ int fs_rmdir(const char *pathname)
     if (isDirEmpty(target) == 0)
     {
         printf("Cannot remove directory, directory is not empty.\n");
+        freeDir(retParent);
         return -1;
     }
 
@@ -97,19 +98,30 @@ int fs_rmdir(const char *pathname)
     if (releaseResult < 0)
     {
         printf("Failed to release blocks.\n");
+        freeDir(retParent);
         return -1;
     }
 
-    free(target);
+    freeDir(target);
+
+    printf("Directory entry before clearing: %s, location: %d, size: %d\n",
+       retParent[index].name, retParent[index].location, retParent[index].size);
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
+    memset(&retParent[index], 0, sizeof(DE));
+
+    printf("Directory entry after clearing: %s, location: %d, size: %d\n",
+       retParent[index].name, retParent[index].location, retParent[index].size);
+       
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
     {
         printf("Failed to write back directory.\n");
+        freeDir(retParent);
         return -1;
     }
 
+    freeDir(retParent);
     return 0;
 }
 
@@ -411,7 +423,7 @@ int fs_delete(char *filename)
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-    char *path = strdup(cwdString); // need to change this into the file name location
+    char *path = strdup(filename); // need to change this into the file name location
     int result = parsePath(path, &retParent, &index, lastElemName);
 
     free(path);
@@ -424,16 +436,19 @@ int fs_delete(char *filename)
         return -1; // Invalid path / parse error / directory already exists
     }
     printf("Starting remove file on %s\n", retParent[index].name);
+    if (retParent[index].size > 0) {
     DE *target = loadDir(&retParent[index]);
 
     int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
     if (releaseResult < 0)
     {
         printf("Failed to release blocks.\n");
+        freeDir(retParent);
         return -1;
     }
 
     freeDir(target);
+    }
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     int writeBackResult = writeDir(retParent);

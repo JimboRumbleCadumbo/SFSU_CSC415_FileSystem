@@ -89,6 +89,7 @@ DE * createDirectory(int numEntries, DE *parent) {
  */
 int writeDir(DE *dir) {
     int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
+    printf("Writing %d blocks to disk at block #%d.\n", blocks, dir->location);
     int blocksWritten = discontinuousWrite(dir->location, dir);
 
     if (blocks != blocksWritten) {

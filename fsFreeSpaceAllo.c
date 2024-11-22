@@ -88,14 +88,22 @@ int releaseBlocks(int numToRelease, int startingBlock) {
 
     int currentLoc = startingBlock;
 
+     if (startingBlock < 0 || startingBlock >= vcb->numBlocks) {
+        printf("Error: Invalid starting block %d\n", startingBlock);
+        return -1;
+    }
+
     for (int i = 0; i < numToRelease; i++) {
+        if (currentLoc <= 0 || currentLoc >= vcb->numBlocks) {
+            // Avoid freeing past numBlocks or the VCB
+            printf("Invalid block number specified.\n");
+            return -1;
+        }
         int nextBlock = fat[currentLoc];
         printf("Freeing block %d\n", currentLoc);
 
-        if (i == numToRelease - 1) {
-            fat[currentLoc] = vcb->freeSpaceLoc;
-            printf("Linking block %d to the start of free space at %d\n", currentLoc, vcb->tableLoc);
-        }
+        fat[currentLoc] = vcb->freeSpaceLoc;
+        vcb->freeSpaceLoc = currentLoc;
         
         currentLoc = nextBlock;
     }
