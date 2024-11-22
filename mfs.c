@@ -94,17 +94,18 @@ int fs_rmdir(const char *pathname)
         return -1;
     }
 
-    int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
+    int blocksToRelease = (target->size + (vcb->blockSize - 1)) / vcb->blockSize;
+    int releaseResult = releaseBlocks(blocksToRelease, target->location);
     if (releaseResult < 0)
     {
         printf("Failed to release blocks.\n");
         freeDir(retParent);
+        freeDir(target);
         return -1;
     }
 
     freeDir(target);
 
-    strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent[index], 0, sizeof(DE));
 
     int writeBackResult = writeDir(retParent);

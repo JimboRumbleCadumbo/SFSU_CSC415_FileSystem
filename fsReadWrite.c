@@ -239,7 +239,7 @@ int reduceChain(int numBlocksToReduce, int startingBlock){
  */
 int writeFAT() {
     int numFATBlocks = ((vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1))/vcb->blockSize;
-    int blocksWritten = LBAwrite(fat, numFATBlocks, vcb->tableLoc);
+    int blocksWritten = discontinuousWrite(vcb->tableLoc, fat);
 
     if (blocksWritten != numFATBlocks) {
         printf("Error writing all blocks of FAT. %d blocks written. \n", blocksWritten);
