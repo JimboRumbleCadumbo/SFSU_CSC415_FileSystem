@@ -334,20 +334,22 @@ int fs_isFile(char *filename)
     int result = parsePath(filename, &retParent, &index, lastElemName);
     if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
+        freeDir(retParent);
         return -1; // Failure
     }
     if (strcmp(retParent[index].name, lastElemName) != 0)
     {
+        freeDir(retParent);
         return -1; // Names don't match
     }
-    if (retParent[index].isDirectory == 1)
-    {
-        return 0;
-    }
+    printf("IsDirectory value of the given DE: %d\n", retParent[index].isDirectory);
     if (retParent[index].isDirectory == 0)
     {
+        freeDir(retParent);
         return 1;
     }
+    freeDir(retParent);
+    return 0;
 }
 
 int fs_isDir(char *pathname)
@@ -360,20 +362,22 @@ int fs_isDir(char *pathname)
     free(path);
     if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
+        freeDir(retParent);
         return -1; // Failure
     }
     if (strcmp(retParent[index].name, lastElemName) != 0)
     {
+        freeDir(retParent);
         return -1; // Names don't match
     }
+    printf("IsDirectory value of the given DE: %d\n", retParent[index].isDirectory);
     if (retParent[index].isDirectory == 1)
     {
+        freeDir(retParent);
         return 1;
     }
-    if (retParent[index].isDirectory == 0)
-    {
-        return 0;
-    }
+    freeDir(retParent);
+    return 0;
 }
 
 // Function to retrieve file or directory data
@@ -393,10 +397,12 @@ int fs_stat(const char *path, struct fs_stat *buf)
     pathname = NULL;
     if (result < 0)
     {
+        freeDir(retParent);
         return -1; // Invalid path
     }
     if (retParent == NULL || lastElemName == NULL || index < 0)
     {
+        freeDir(retParent); 
         return -1; // No parent / no last element name / dir does not exist in parent
     }
     buf->st_size = retParent[index].size; // Assumed the size matches d_reclen
@@ -411,6 +417,7 @@ int fs_stat(const char *path, struct fs_stat *buf)
 
     // 1 for Directory, 0 for File
     buf->st_mode = retParent[index].isDirectory;
+    freeDir(retParent);
     return 0;
 }
 
@@ -432,6 +439,7 @@ int fs_delete(char *filename)
     {
         // Directory not found
         printf("Cannot remove file. Invalid path or file not found.\n");
+        freeDir(retParent);
         return -1; // Invalid path / parse error / directory already exists
     }
     printf("Starting remove file on %s\n", retParent[index].name);
@@ -444,15 +452,16 @@ int fs_delete(char *filename)
         return -1;
     }
 
-    free(target);
+    freeDir(target);
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
     {
         printf("Failed to write back file.\n");
+        freeDir(retParent);
         return -1;
     }
-
+    freeDir(retParent);
     return 0;
 }
