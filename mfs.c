@@ -104,15 +104,9 @@ int fs_rmdir(const char *pathname)
 
     freeDir(target);
 
-    printf("Directory entry before clearing: %s, location: %d, size: %d\n",
-       retParent[index].name, retParent[index].location, retParent[index].size);
-
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent[index], 0, sizeof(DE));
 
-    printf("Directory entry after clearing: %s, location: %d, size: %d\n",
-       retParent[index].name, retParent[index].location, retParent[index].size);
-       
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
     {

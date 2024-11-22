@@ -104,6 +104,11 @@ int releaseBlocks(int numToRelease, int startingBlock) {
 
         fat[currentLoc] = vcb->freeSpaceLoc;
         vcb->freeSpaceLoc = currentLoc;
+
+        if (nextBlock == END_OF_CHAIN) {
+            printf("Reached end of chain. \n");
+            break;
+        }
         
         currentLoc = nextBlock;
     }
