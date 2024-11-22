@@ -161,6 +161,7 @@ fdDir *fs_opendir(const char *pathname)
         freeDir(loadedDir);
         loadedDir = NULL;
     }
+    strcpy(di->d_name, pathname);
     openedDir->dirEntryPosition = 0;
     openedDir->di = di;
     printf("Successfully opened directory.\n");
@@ -332,24 +333,14 @@ int fs_isFile(char *filename)
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
     int result = parsePath(filename, &retParent, &index, lastElemName);
-    if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL)
+    if (result < 0 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
         freeDir(retParent);
-        return -1; // Failure
+        return 0; // Failure
     }
-    if (strcmp(retParent[index].name, lastElemName) != 0)
-    {
-        freeDir(retParent);
-        return -1; // Names don't match
-    }
-    printf("IsDirectory value of the given DE: %d\n", retParent[index].isDirectory);
-    if (retParent[index].isDirectory == 0)
-    {
-        freeDir(retParent);
-        return 1;
-    }
+    int isDir = retParent[index].isDirectory;
     freeDir(retParent);
-    return 0;
+    return (!isDir);
 }
 
 int fs_isDir(char *pathname)
@@ -360,24 +351,14 @@ int fs_isDir(char *pathname)
     char *path = strdup(pathname);
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
-    if (result < 1 || index < 0 || lastElemName == NULL || retParent == NULL)
+    if (result < 0 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
         freeDir(retParent);
-        return -1; // Failure
+        return 0; // Not directory
     }
-    if (strcmp(retParent[index].name, lastElemName) != 0)
-    {
-        freeDir(retParent);
-        return -1; // Names don't match
-    }
-    printf("IsDirectory value of the given DE: %d\n", retParent[index].isDirectory);
-    if (retParent[index].isDirectory == 1)
-    {
-        freeDir(retParent);
-        return 1;
-    }
+    int isDir = retParent[index].isDirectory;
     freeDir(retParent);
-    return 0;
+    return isDir;
 }
 
 // Function to retrieve file or directory data
@@ -402,7 +383,7 @@ int fs_stat(const char *path, struct fs_stat *buf)
     }
     if (retParent == NULL || lastElemName == NULL || index < 0)
     {
-        freeDir(retParent); 
+        freeDir(retParent);
         return -1; // No parent / no last element name / dir does not exist in parent
     }
     buf->st_size = retParent[index].size; // Assumed the size matches d_reclen
