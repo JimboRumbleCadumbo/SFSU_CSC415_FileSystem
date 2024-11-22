@@ -112,7 +112,7 @@ int firstUnusedDirEntry(DE *parent) {
  * Description: Check if the directory entry is empty.
  * 
  * @param parent The directory that we wish to check
- * @return 0 if the directory is empty, 1 if not.
+ * @return 1 if the directory is empty, 0 if not.
  */
 int isDirEmpty(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
@@ -123,4 +123,29 @@ int isDirEmpty(DE *parent) {
         }
     }
     return 1;
+}
+
+/**
+ * int removeDirectoryEntry(DE *dir)
+ * 
+ * Description: Shift entries in a directory if it is removed
+ * 
+ * @param dir The directory to be shifted
+ * @param indexToRemove The index of the entry to shift
+ * @return 0 if success, -1 if failure
+ */
+int removeDirectoryEntry(DE *dir, int indexToRemove) {
+    if (dir == NULL || indexToRemove < 0 || indexToRemove >= ENTRIES_IN_DIR) {
+        printf("Invalid input for directory removal.\n");
+        return -1;
+    }
+
+    // Shift entries after the removed one
+    for (int i = indexToRemove; i < ENTRIES_IN_DIR - 1; i++) {
+        dir[i] = dir[i + 1];
+    }
+
+    // Clear the last entry
+    memset(&dir[ENTRIES_IN_DIR - 1], 0, sizeof(DE));
+    return 0;
 }

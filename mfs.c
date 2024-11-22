@@ -86,6 +86,16 @@ int fs_rmdir(const char *pathname)
         return -1; // Invalid path / parse error / directory already exists
     }
     printf("Starting remove directory on %s\n", retParent[index].name);
+    if (retParent[index].location == root->location) {
+        printf("Can't remove the root directory.\n");
+        freeDir(retParent);
+        return -1;
+    }
+    if (retParent[index].location == cwd->location) {
+        printf("Can't remove the current working directory.\n");
+        freeDir(retParent);
+        return -1;
+    }
     DE *target = loadDir(&retParent[index]);
     if (isDirEmpty(target) == 0)
     {
@@ -103,9 +113,10 @@ int fs_rmdir(const char *pathname)
         freeDir(target);
         return -1;
     }
-    freeDir(target);
+    //freeDir(target);
 
     memset(&retParent[index], 0, sizeof(DE));
+    removeDirectoryEntry(retParent, index);
 
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
@@ -176,20 +187,32 @@ fdDir *fs_opendir(const char *pathname)
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
-
-    int pos = dirp->dirEntryPosition;
-    // printf("fs_readdir - pos: %d, dirEntryPosition: %d, entry name: %s\n",
-    // pos, dirp->dirEntryPosition, dirp->directory[pos].name);
-    if (pos < ENTRIES_IN_DIR && dirp->directory[pos].name[0] != '\0')
-    {
-        strncpy(dirp->di->d_name, dirp->directory[pos].name, strlen(dirp->directory[pos].name));
-        dirp->di->d_name[sizeof(dirp->di->d_name) - 1] = '\0';
-        dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
-        dirp->di->timeCreated = dirp->directory[pos].timeCreated;
-        dirp->di->timeModified = dirp->directory[pos].timeModified;
-        dirp->dirEntryPosition++;
-        return dirp->di;
+    if (dirp == NULL) {
+        printf("Invalid input.\n");
+        return NULL;
     }
+    while (dirp->dirEntryPosition < ENTRIES_IN_DIR) {
+        int pos = dirp->dirEntryPosition;
+        
+        // Check if the current entry is valid (non-empty name)
+        if (dirp->directory[pos].name[0] != '\0') {
+            // Copy the entry details to `dirp->di`
+            strncpy(dirp->di->d_name, dirp->directory[pos].name, sizeof(dirp->di->d_name) - 1);
+            dirp->di->d_name[sizeof(dirp->di->d_name) - 1] = '\0';
+            dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
+            dirp->di->timeCreated = dirp->directory[pos].timeCreated;
+            dirp->di->timeModified = dirp->directory[pos].timeModified;
+
+            // Advance to the next position for the next call
+            dirp->dirEntryPosition++;
+            return dirp->di;
+        }
+
+        // Skip empty entries
+        dirp->dirEntryPosition++;
+    }
+
+    // If no valid entries are found, return NULL
     return NULL;
 }
 
@@ -430,18 +453,19 @@ int fs_delete(char *filename)
         return -1; // Invalid path / parse error / directory already exists
     }
     printf("Starting remove file on %s\n", retParent[index].name);
-    if (retParent[index].size > 0) {
-    DE *target = loadDir(&retParent[index]);
-
-    int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
-    if (releaseResult < 0)
+    if (retParent[index].size > 0)
     {
-        printf("Failed to release blocks.\n");
-        freeDir(retParent);
-        return -1;
-    }
+        DE *target = loadDir(&retParent[index]);
 
-    freeDir(target);
+        int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
+        if (releaseResult < 0)
+        {
+            printf("Failed to release blocks.\n");
+            freeDir(retParent);
+            return -1;
+        }
+
+        freeDir(target);
     }
 
     strncpy(retParent[index].name, "\0", MAX_NAME_LENGTH);
