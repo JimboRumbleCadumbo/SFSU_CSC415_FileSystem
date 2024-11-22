@@ -52,13 +52,14 @@ typedef struct b_fcb
 {
     char *buf;          // holds the open file buffer
     int index;          // holds the current position in the buffer
-    int fileLocation;   // holds the file location on the disk
+    int fileLocation;   // holds the file's first block location on the disk
     int buflen;         // holds how many valid bytes are in the buffer
     int fileDescriptor; // file descriptor
     int filePointer;    // current position in the file
     int fileSize;       // size of the file
     int blockSize;      // size of a block
     int accessFlags;    // flags for O_RDONLY, O_WRONLY, O_RDWR
+    int isDirty;        // holder for dirty buffer. 1 if dirty, 0 if not
     DE *directoryEntry; // pointer to the directory entry
 } b_fcb;
 
@@ -214,6 +215,11 @@ b_io_fd b_open(char *filename, int flags)
 // Interface to seek function
 // also make sure that seek aslo loads the buffer
 
+/**
+ * int b_seek(b_io_fd fd, off_t offset, int whence)
+ * 
+ * TODO:: If block dirty, write it to disk
+ */
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
@@ -275,8 +281,7 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
 /**
  * int b_write(b_io_fd fd, char *buffer, int count)
  *
- *
- * TODO: Need to add extend chain for certian conditions, need more debuging
+ * TODO: Add flag conditions
  */
 int b_write(b_io_fd fd, char *buffer, int count)
 {
@@ -305,60 +310,83 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     // TODO: Allocate blocks on disk for the file
 
-    // start writing
-
-    int p1RemainingBytes = B_CHUNK_SIZE - (fcb->index % B_CHUNK_SIZE);
-
+    // P0.5:
     // If count is smaller than the remaining bytes in the current block, write
     // and return.
-    if (count <= p1RemainingBytes)
-    {
-        memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer, count);
-        fcb->index += count;
-        fcb->fileSize += count;
+    if(count < fcb->filePointer % B_CHUNK_SIZE){
+        printf("[P0.5] Supplement bytes in current block...\n");
+        memcpy(fcb->buf + (fcb->filePointer % B_CHUNK_SIZE), buffer, count);   
+        fcb->filePointer += count;     
+        if(fcb->fileSize < fcb->filePointer){
+            fcb->fileSize = fcb->filePointer; 
+        }
+        fcb->isDirty = 1;
         return count;
     }
 
-    int p1 = 0, p2 = 0, p3 = 0;
+    // start writing 
+    int p1 = 0, p2 = 0; // No need p3 since p3 = count - p1 - p2
+    int targetBlock = 0; //  Holder for the moveBlockIndex result
+    int excessBytes = count - (fcb->fileSize - fcb->filePointer);
+
+    // see if current position needs to extend the chain for the incoming count
+    if (excessBytes > 0){
+        printf("Excess bytes: %d, extending %d blocks...\n", excessBytes,
+                (excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
+        extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation);
+    }
 
     // p1
-    memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer, p1RemainingBytes);
-    p1 += p1RemainingBytes;
-    fcb->index += p1RemainingBytes;
-    fcb->fileSize += p1RemainingBytes;
+    int existingBytes = fcb->filePointer % B_CHUNK_SIZE;
+    p1 = B_CHUNK_SIZE - existingBytes;
+    memcpy(fcb->buf + existingBytes, buffer, p1);
+    fcb->filePointer += p1;
+    if(fcb->fileSize < fcb->filePointer){
+        fcb->fileSize = fcb->filePointer;
+    }
+    count -= p1;
+
+    targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
+    int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf ,1); 
+    if(p1Write == -1){
+        printf("[p1] disc-Write Failed\n");
+        return -1;
+    }    
 
     // p2
-    int blocksNeeded = (count - p1) / B_CHUNK_SIZE;
-    p2 = blocksNeeded * B_CHUNK_SIZE;
+    int p2NeededBlocks = count / B_CHUNK_SIZE;
+    p2 = p2NeededBlocks * B_CHUNK_SIZE;
+    fcb->filePointer += p2;
+    if(fcb->fileSize < fcb->filePointer){
+        fcb->fileSize = fcb->filePointer;
+    }
+    count -= p2;
 
-    int nextBlock = (fcb->fileLocation + fcb->index + 1) / B_CHUNK_SIZE;
-    int p2Write = discontinuousPartialWrite(nextBlock, buffer + p1, blocksNeeded);
-    fcb->index += p2;
-    fcb->fileSize += p2;
-
-    if (count - p1 - p2 == 0)
-    {
-        return count;
+    targetBlock = moveBlockIndex(targetBlock, 1);
+    int p2Write = discontinuousPartialWrite(targetBlock, buffer + p1, p2NeededBlocks);
+    if(p2Write == -1){
+        printf("[p2] disc-Write Failed\n");
+        return -1;
     }
 
     // p3
-    p3 = count - p1 - p2;
-    nextBlock = (fcb->fileLocation + fcb->index + 1) / B_CHUNK_SIZE; // Update nextBlock
-    int p3Read = discontinuousPartialRead(nextBlock, fcb->buf, 1);
-    memcpy(fcb->buf + (fcb->index % B_CHUNK_SIZE), buffer + p1 + p2, p3);
-    fcb->index += p3;
-    fcb->fileSize += p3;
-
-    // Update file metadata
-    if (fcb->filePointer > fcb->fileSize)
-    {
-        fcb->fileSize = fcb->filePointer; // Update file size if file grows
+    targetBlock = moveBlockIndex(targetBlock, p2NeededBlocks);
+    int p3Read = discontinuousPartialRead(targetBlock, fcb->buf, 1);
+    if(p3Read == -1){
+        printf("[p3] disc-Read Failed\n");
+        return -1;
     }
+    memcpy(buffer + p1 + p2, fcb->buf, count);
+    fcb->filePointer += count;
+    if(fcb->fileSize < fcb->filePointer){
+        fcb->fileSize = fcb->filePointer;
+    }
+    fcb->isDirty = 1;
 
-    printf("Write complete. Bytes written: %d\n", count);
+    printf("Write complete. Bytes written: %d\n", count + p1 + p2);
     time_t now = time(NULL);
     fcb->directoryEntry->timeModified = now;
-    return count;
+    return count + p1 + p2;
 }
 
 // Interface to read a buffer
@@ -457,8 +485,10 @@ int b_read(b_io_fd fd, char *buffer, int count)
  * int b_close(b_io_fd fd)
  *
  *
- * TODO :: 1. Need to add update time || 2. Need to do an extra write to disk
+ * TODO :: 1. Need to do an extra write to the disk when block is dirty & update DE info
+ *         2. Need to free the DE in the fcb struct
  */
+ 
 int b_close(b_io_fd fd)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
