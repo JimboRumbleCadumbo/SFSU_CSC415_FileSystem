@@ -103,7 +103,6 @@ int fs_rmdir(const char *pathname)
         freeDir(target);
         return -1;
     }
-
     freeDir(target);
 
     memset(&retParent[index], 0, sizeof(DE));
