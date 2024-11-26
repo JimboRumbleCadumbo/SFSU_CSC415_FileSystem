@@ -33,6 +33,7 @@ DE * createDirectory(int numEntries, DE *parent) {
     int actualBytes = blocksNeeded * vcb->blockSize;
     DE *newDir;
     newDir = (DE *)malloc(actualBytes);
+    memset(newDir, 0, actualBytes);
     
     if (newDir == NULL) {
         printf("Malloc failed");

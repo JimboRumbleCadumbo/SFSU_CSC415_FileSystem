@@ -35,6 +35,7 @@ int initializeFAT(int blockSize, int numBlocks) {
     totalBlocks;
     int totalBytes = totalBlocks * blockSize;
     fat = (int *)malloc(totalBytes);
+    memset(fat, 0, totalBytes);
 
     if (fat == NULL) {
         return -1; // Memory allocation failed
