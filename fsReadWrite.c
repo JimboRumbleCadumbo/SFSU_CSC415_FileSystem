@@ -99,10 +99,10 @@ int discontinuousPartialWrite(int startingBlock, void *buffer, int numBlocksToWr
     int bytesWritten = 0;
     int writeReturn = 0;
 
-    while (numBlocksToWrite > 0){
+    while (writeCount > 0 && currentBlock != -1) {
         writeReturn = LBAwrite(buffer + bytesWritten, 1, currentBlock);
         if(writeReturn < 0){
-            printf("LBAwrite Error......\n");
+            printf("[disconti-PWrite]LBAwrite Error......\n");
             return -1;
         }
         bytesWritten += vcb->blockSize;
@@ -112,7 +112,7 @@ int discontinuousPartialWrite(int startingBlock, void *buffer, int numBlocksToWr
 
     // Return check for ensuring
     int blocksWritten = (bytesWritten / vcb->blockSize);
-    if (blocksWritten - numBlocksToWrite != 0){
+    if (blocksWritten != numBlocksToWrite){
         printf("blocksWritten is not equal to numBlocksToWrite......\n");
         return -1;
     }
@@ -137,10 +137,10 @@ int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRea
     int bytesRead = 0;
     int blocksRead = 0;
     
-    while (readCount > 0){
+    while (readCount > 0 && currentBlock != -1){
         blocksRead = LBAread(buffer + bytesRead, 1, currentBlock);
         if(blocksRead < 0){
-            printf("LBAread Error......\n");
+            printf("[disconti-PRead]LBAread Error......\n");
             return -1;
         }
         bytesRead += vcb->blockSize;
@@ -167,7 +167,18 @@ int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRea
  * @return The new block index
  */
 int moveBlockIndex(int startingBlock, int numBlocksToMove) {
+    if(numBlocksToMove < 0){
+        printf("[moveBlockIndex] numBlocksToMove is negative\n");
+        return -1;
+    }
+    
+    
     for (int i = 0; i < numBlocksToMove; i++) {
+        
+        if(startingBlock == END_OF_CHAIN){
+            printf("[moveBlockIndex] Reached end of chain\n");
+            return -1;
+        }
         startingBlock = fat[startingBlock];
     }
     
@@ -187,11 +198,12 @@ int extendChain(int numBlocksToExtend, int startingBlock){
     int currentBlock = startingBlock;
 
     while(fat[currentBlock] != END_OF_CHAIN){
-        currentBlock++;
+        // currentBlock++;
         currentBlock = fat[currentBlock];
     }
 
     fat[currentBlock] = vcb->freeSpaceLoc;
+    printf("[extendChain] Extending chain from block %d", vcb->freeSpaceLoc);
     int result = allocateBlocks(numBlocksToExtend);
     if (result < 0) {
         printf("Error allocating blocks.\n");
