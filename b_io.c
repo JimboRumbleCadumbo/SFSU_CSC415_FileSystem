@@ -191,6 +191,7 @@ b_io_fd b_open(char *filename, int flags)
     // }
 
         // Handle O_RDONLY flag
+        //  File can only do read/seek operations
     if (flags & O_RDONLY)
     {
         printf("[Read ONLY flag specified] \n");
@@ -209,6 +210,7 @@ b_io_fd b_open(char *filename, int flags)
     }
 
     // Handle O_WRONLY flag
+    //  File can only do write/seek operations
     if (flags & O_WRONLY)
     {
         printf("[Write ONLY flag specified] \n");
@@ -227,6 +229,7 @@ b_io_fd b_open(char *filename, int flags)
     }
 
        // Handle O_RDWR flag
+       // File can be read or written to
     if (flags & O_RDWR)
     {
         printf("[Read/Write flag specified] \n");
