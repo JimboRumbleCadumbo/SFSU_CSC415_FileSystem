@@ -190,6 +190,61 @@ b_io_fd b_open(char *filename, int flags)
     //     fcb.buflen = 0;
     // }
 
+        // Handle O_RDONLY flag
+    if (flags & O_RDONLY)
+    {
+        printf("[Read ONLY flag specified] \n");
+        if (index < 0)
+        {
+            printf("File does not exist.\n");
+            freeDir(retParent);
+            return -1;
+        }
+
+        fcb.fileLocation = retParent[index].location;
+        fcb.filePointer = 0;
+        fcb.fileSize = retParent[index].size;
+        fcb.index = 0;
+        fcb.buflen = 0;
+    }
+
+    // Handle O_WRONLY flag
+    if (flags & O_WRONLY)
+    {
+        printf("[Write ONLY flag specified] \n");
+        if (index < 0)
+        {
+            printf("File does not exist.\n");
+            freeDir(retParent);
+            return -1;
+        }
+
+        fcb.fileLocation = retParent[index].location;
+        fcb.filePointer = 0;
+        fcb.fileSize = retParent[index].size;
+        fcb.index = 0;
+        fcb.buflen = 0;
+    }
+
+       // Handle O_RDWR flag
+    if (flags & O_RDWR)
+    {
+        printf("[Read/Write flag specified] \n");
+        if (index < 0)
+        {
+            printf("File does not exist.\n");
+            freeDir(retParent);
+            return -1;
+        }
+
+        fcb.fileLocation = retParent[index].location;
+        fcb.filePointer = 0;
+        fcb.fileSize = retParent[index].size;
+        fcb.index = 0;
+        fcb.buflen = 0;
+    }
+
+
     printf("Getting file control block. \n");
     returnFd = b_getFCB(); // get our own file descriptor
                            // check for error - all used FCB's
