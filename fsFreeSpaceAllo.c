@@ -42,7 +42,7 @@ int allocateBlocks(int numBlocks) {
         return END_OF_CHAIN;
     }
 
-    if (fat[vcb->freeSpaceLoc] == END_OF_CHAIN) {
+    if (vcb->freeSpaceLoc == vcb->numBlocks) {
         printf("No more disc space.\n");
         return END_OF_CHAIN;
     }

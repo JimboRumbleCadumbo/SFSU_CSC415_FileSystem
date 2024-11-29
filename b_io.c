@@ -100,7 +100,7 @@ b_io_fd b_open(char *filename, int flags)
 {
     printf("\n[In b_open]\n");
     b_io_fd returnFd;
-    
+
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -190,8 +190,8 @@ b_io_fd b_open(char *filename, int flags)
     //     fcb.buflen = 0;
     // }
 
-        // Handle O_RDONLY flag
-        //  File can only do read/seek operations
+    // Handle O_RDONLY flag
+    //  File can only do read/seek operations
     if (flags & O_RDONLY)
     {
         printf("[Read ONLY flag specified] \n");
@@ -228,8 +228,8 @@ b_io_fd b_open(char *filename, int flags)
         fcb.buflen = 0;
     }
 
-       // Handle O_RDWR flag
-       // File can be read or written to
+    // Handle O_RDWR flag
+    // File can be read or written to
     if (flags & O_RDWR)
     {
         printf("[Read/Write flag specified] \n");
@@ -246,7 +246,6 @@ b_io_fd b_open(char *filename, int flags)
         fcb.index = 0;
         fcb.buflen = 0;
     }
-
 
     printf("Getting file control block. \n");
     returnFd = b_getFCB(); // get our own file descriptor
@@ -297,7 +296,7 @@ b_io_fd b_open(char *filename, int flags)
 
 /**
  * int b_seek(b_io_fd fd, off_t offset, int whence)
- * 
+ *
  * TODO:: If block dirty, write it to disk
  */
 int b_seek(b_io_fd fd, off_t offset, int whence)
@@ -319,7 +318,7 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
     }
 
     // Calculate the new file pointer position
-    off_t newPointer =0;
+    off_t newPointer = 0;
     switch (whence)
     {
     case SEEK_SET:
@@ -394,88 +393,96 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     // TODO: Allocate blocks on disk for the file
 
-    if(fcb->fileSize == 0){
+    if (fcb->fileSize == 0)
+    {
         printf("[Write] File size is 0, allocate a block for it\n");
         fcb->fileLocation = allocateBlocks(1); // Allocate a block for the file;
-        (fcb->directoryEntry+fcb->deIndex)->location = fcb->fileLocation;
+        (fcb->directoryEntry + fcb->deIndex)->location = fcb->fileLocation;
     }
 
     // P0.5:
     // If count is smaller than the remaining bytes in the current block, write
     // and return.
-    if(count < B_CHUNK_SIZE-(fcb->filePointer % B_CHUNK_SIZE)){
+    if (count < B_CHUNK_SIZE - (fcb->filePointer % B_CHUNK_SIZE))
+    {
         printf("[P0.5] Supplement bytes in current block...\n");
-        memcpy(fcb->buf + (fcb->filePointer % B_CHUNK_SIZE), buffer, count);   
-        fcb->filePointer += count;     
-        if(fcb->fileSize < fcb->filePointer){
-            fcb->fileSize = fcb->filePointer; 
+        memcpy(fcb->buf + (fcb->filePointer % B_CHUNK_SIZE), buffer, count);
+        fcb->filePointer += count;
+        if (fcb->fileSize < fcb->filePointer)
+        {
+            fcb->fileSize = fcb->filePointer;
         }
         fcb->isDirty = 1;
         return count;
     }
 
-    // start writing 
-    int p1 = 0, p2 = 0; // No need p3 since p3 = count - p1 - p2
+    // start writing
+    int p1 = 0, p2 = 0;  // No need p3 since p3 = count - p1 - p2
     int targetBlock = 0; //  Holder for the moveBlockIndex result
     int excessBytes = count - (fcb->fileSize - fcb->filePointer);
 
     // see if current position needs to extend the chain for the incoming count
-    if (excessBytes > 0){
+    if (excessBytes > 0)
+    {
         printf("Excess bytes: %d, extending %d blocks...\n", excessBytes,
-                (excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
+               (excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
         extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation);
     }
 
     // p1
     targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
-    printf("[p1]targetBlock:%d, %d blocks moved\n", targetBlock,fcb->filePointer / B_CHUNK_SIZE);
-    
+    printf("[p1]targetBlock:%d, %d blocks moved\n", targetBlock, fcb->filePointer / B_CHUNK_SIZE);
+
     int existingBytes = fcb->filePointer % B_CHUNK_SIZE;
     p1 = B_CHUNK_SIZE - existingBytes;
     memcpy(fcb->buf + existingBytes, buffer, p1);
     fcb->filePointer += p1;
-    if(fcb->fileSize < fcb->filePointer){
+    if (fcb->fileSize < fcb->filePointer)
+    {
         fcb->fileSize = fcb->filePointer;
     }
     count -= p1;
 
-    
-    int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf ,1); 
-    if(p1Write == -1){
+    int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf, 1);
+    if (p1Write == -1)
+    {
         printf("[p1] disc-Write Failed\n");
         return -1;
-    }    
+    }
     targetBlock = moveBlockIndex(targetBlock, 1);
     // p2
     int p2NeededBlocks = count / B_CHUNK_SIZE;
-    if(p2NeededBlocks != 0){
+    if (p2NeededBlocks != 0)
+    {
         printf("p2 needed blocks: %d\n", p2NeededBlocks);
         p2 = p2NeededBlocks * B_CHUNK_SIZE;
         fcb->filePointer += p2;
-        if(fcb->fileSize < fcb->filePointer){
+        if (fcb->fileSize < fcb->filePointer)
+        {
             fcb->fileSize = fcb->filePointer;
         }
         count -= p2;
 
-        
         int p2Write = discontinuousPartialWrite(targetBlock, buffer + p1, p2NeededBlocks);
-        if(p2Write == -1){
+        if (p2Write == -1)
+        {
             printf("[p2] disc-Write Failed\n");
             return -1;
         }
-        
-    } 
+    }
 
-    // p3    
+    // p3
     printf("[p3]targetBlock:%d\n", targetBlock);
     int p3Read = discontinuousPartialRead(targetBlock, fcb->buf, 1);
-    if(p3Read == -1){
+    if (p3Read == -1)
+    {
         printf("[p3] disc-Read Failed\n");
         return -1;
     }
     memcpy(fcb->buf, buffer + p1 + p2, count);
     fcb->filePointer += count;
-    if(fcb->fileSize < fcb->filePointer){
+    if (fcb->fileSize < fcb->filePointer)
+    {
         fcb->fileSize = fcb->filePointer;
     }
     fcb->isDirty = 1;
@@ -508,7 +515,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 //  |             |                                                |        |
 //  | Part1       |  Part 2                                        | Part3  |
 //  +-------------+------------------------------------------------+--------+
-
 
 /**
  * TODO: make sure all values in fcb struct are read properly
@@ -581,7 +587,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
         bytesToRead -= bytesFromBuffer;
     }
 
-     printf("\n[End b_read]\n");
+    printf("\n[End b_read]\n");
 
     // Return the number of bytes read
     return totalBytesRead;
@@ -593,11 +599,11 @@ int b_read(b_io_fd fd, char *buffer, int count)
  *
  * TODO :: check initialized value, will be related to b_open & read
  */
- 
+
 int b_close(b_io_fd fd)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
-     printf("\n[In b_close]\n");
+    printf("\n[In b_close]\n");
     if ((fd < 0) || (fd >= MAXFCBS))
     {
         printf("Invalid file descriptor passed. \n");
@@ -614,12 +620,12 @@ int b_close(b_io_fd fd)
         printf("File is not open. \n");
         return -1; // File not open
     }
-    if( fcb->isDirty == 1){
-        int targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);    
-        int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf ,1); 
+    if (fcb->isDirty == 1)
+    {
+        int targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
+        int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf, 1);
     }
-    
- 
+
     // Free the buffer
     if (fcb->buf != NULL)
     {
@@ -627,22 +633,24 @@ int b_close(b_io_fd fd)
         free(fcb->buf);
         fcb->buf = NULL;
     }
-    DE* fe = fcb->directoryEntry+fcb->deIndex;
-    fe->size = fcb->fileSize;
-    fe->timeModified = time(NULL);
-    
-    printf("DE name: %s\n", fe->name);
-    printf("DE location: %d\n", fe->location);
-    printf("DE size: %d\n", fe->size);
-    
-    if (writeDir(fcb->directoryEntry) < 0)
+    if (fcb->fileSize > 0 && fcb->directoryEntry != NULL)
     {
-        printf("Error writing directory entry.\n");
-        return -1;
-    }
-    freeDir(fcb->directoryEntry);
+        fcb->directoryEntry;
+        fcb->directoryEntry->size = fcb->fileSize;
+        fcb->directoryEntry->timeModified = time(NULL);
 
-    
+        printf("DE name: %s\n", fcb->directoryEntry->name);
+        printf("DE location: %d\n", fcb->directoryEntry->location);
+        printf("DE size: %d\n", fcb->directoryEntry->size);
+
+        if (writeDir(fcb->directoryEntry) < 0)
+        {
+            printf("Error writing directory entry.\n");
+            return -1;
+        }
+        freeDir(fcb->directoryEntry);
+    }
+
     // Reset the file control block
     printf("Resetting FCB. \n");
     fcb->fileDescriptor = -1;
