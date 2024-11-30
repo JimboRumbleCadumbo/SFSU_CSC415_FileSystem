@@ -123,6 +123,11 @@ b_io_fd b_open(char *filename, int flags)
         freeDir(retParent);
         return -1;
     }
+    if(index > 0 && retParent[index].isDirectory){
+        printf("Is not a file. \n");
+        freeDir(retParent);
+        return -1;
+    }
     printf("Successfully parsed path. \n");
     printf("Allocating memory for FCB. \n");
     b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
@@ -734,7 +739,13 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     printf("Successfully parsed path. \n");
 
     printf("Loading destination directory. \n");
-    DE *destDirectory = retParent2; 
+    DE *destDirectory;
+    if(index2 < 0){
+        destDirectory = retParent2;
+    }else{
+        destDirectory = loadDir(&retParent2[index2]);
+    }
+    
     if (destDirectory == NULL)
     {
         printf("Error loading dest directory.\n");
@@ -753,9 +764,14 @@ int b_move(char *pathnameSrc, char *pathnameDest)
         freeDir(retParent2);
         return -1;
     }
-    printf("Populating destination directory entry. \n");
-    strcpy(destDirectory[index].name, retParent1[index1].name);
-    printf("Directory name is now: %s\n", destDirectory[index].name);
+    printf("Populating destination directory entry. index:%d\n", index);
+    if(index2 < 0){
+        strcpy(destDirectory[index].name, lastElemName2);
+    }else{
+        strcpy(destDirectory[index].name, retParent1[index1].name);
+    }
+    
+    printf("File name is now: %s\n", destDirectory[index].name);
     destDirectory[index].isDirectory = 0;
     destDirectory[index].location = retParent1[index1].location;
     destDirectory[index].size = retParent1[index1].size;
@@ -775,15 +791,17 @@ int b_move(char *pathnameSrc, char *pathnameDest)
                destDirectory[i].name, destDirectory[i].isDirectory,
                destDirectory[i].location, destDirectory[i].size);
     }*/
-    printf("Resetting old parent to be unused.\n");
+    printf("Resetting old parent to be unused. index\n");
+    retParent1 = loadDir(retParent1);
     strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent1[index1], 0, sizeof(DE));
-    printf("Writing src. directory entry.\n");
+
     if (writeDir(retParent1) < 0)
     {
         printf("Error writing source directory.\n");
         return -1;
     }
+    
     if (retParent2 != destDirectory && retParent2 != retParent1)
     {
         freeDir(retParent2);
