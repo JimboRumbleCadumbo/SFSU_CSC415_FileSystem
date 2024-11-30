@@ -173,6 +173,7 @@ fdDir *fs_opendir(const char *pathname)
     strcpy(di->d_name, pathname);
     openedDir->dirEntryPosition = 0;
     openedDir->di = di;
+    strcpy(di->d_path, pathname);
 
     return openedDir;
 }
@@ -404,6 +405,7 @@ int fs_stat(const char *path, struct fs_stat *buf)
         // printf("Dir does not exist in parent\n");
         return -1; // No parent / no last element name / dir does not exist in parent
     }
+    
     buf->st_size = retParent[index].size; // Assumed the size matches d_reclen
     // printf("[fs_stat]i:%d, %s, size:%d\n",index,retParent[index].name,retParent[index].size);
     buf->st_blksize = vcb->blockSize;

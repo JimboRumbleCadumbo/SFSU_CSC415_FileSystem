@@ -106,8 +106,13 @@ int displayFiles (fdDir * dirp, int flall, int fllong)
 			{
 			if (fllong)
 				{
-				fs_stat (di->d_name, &statbuf);
-				printf ("%s    %9ld   %s\n", fs_isDir(di->d_name)?"D":"-", statbuf.st_size, di->d_name);
+				char target[1024];
+				memset(target,0,1024);
+				strcat(target,di->d_path);
+				strcat(target,"/");
+				strcat(target,di->d_name);
+				fs_stat (target ,&statbuf);				
+				printf ("%s    %9ld   %s\n", fs_isDir(target)?"D":"-", statbuf.st_size, di->d_name);
 				}
 			else
 				{
