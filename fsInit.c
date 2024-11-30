@@ -128,6 +128,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
  */
 void exitFileSystem()
 {
+	LBAwrite(vcb, 1, 0);
 	free(vcb);
 	vcb = NULL;
 	free(fat);

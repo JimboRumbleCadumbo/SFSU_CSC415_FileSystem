@@ -156,10 +156,12 @@ fdDir *fs_opendir(const char *pathname)
     {
         free(openedDir);
         openedDir = NULL;
+        printf("[fs_opendir]Error loading directory\n");
         return NULL;
     }
 
-    openedDir->directory = loadedDir;
+    openedDir->directory = loadedDir;   
+    
     struct fs_diriteminfo *di = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
     if (di == NULL)
     {
@@ -192,6 +194,9 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
             dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
             dirp->di->timeCreated = dirp->directory[pos].timeCreated;
             dirp->di->timeModified = dirp->directory[pos].timeModified;
+
+            //test
+            // printf("Name: %s\n, Size: %d\n  ", dirp->di->d_name, dirp->directory[pos].size);
 
             // Advance to the next position for the next call
             dirp->dirEntryPosition++;
@@ -361,6 +366,7 @@ int fs_isDir(char *pathname)
     char *path = strdup(pathname);
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
+    // printf("[fs_isDir]i:%d, %s, size:%d\n",index,retParent[index].name,retParent[index].size);
     if (result < 0 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
         freeDir(retParent);
@@ -389,14 +395,17 @@ int fs_stat(const char *path, struct fs_stat *buf)
     if (result < 0)
     {
         freeDir(retParent);
+        printf("Invalid path\n");
         return -1; // Invalid path
     }
     if (retParent == NULL || lastElemName == NULL || index < 0)
     {
         freeDir(retParent);
+        // printf("Dir does not exist in parent\n");
         return -1; // No parent / no last element name / dir does not exist in parent
     }
     buf->st_size = retParent[index].size; // Assumed the size matches d_reclen
+    // printf("[fs_stat]i:%d, %s, size:%d\n",index,retParent[index].name,retParent[index].size);
     buf->st_blksize = vcb->blockSize;
     buf->st_blocks = (buf->st_size + (vcb->blockSize - 1)) / (vcb->blockSize);
 

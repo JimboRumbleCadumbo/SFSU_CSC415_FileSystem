@@ -61,6 +61,13 @@ DE * loadDir(DE *dir) {
         return NULL;
     }
 
+    //test
+    // for(int i=0;i<10;i++){
+    //     if(strcmp (new[i].name,"")){
+    //         printf("i:%d, %s, size:%d\n",i,new[i].name,new[i].size);
+    //     }
+    // }
+    
     return new;
 }
 
@@ -81,7 +88,7 @@ int findInDir(DE *parent, char *name) {
 
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 0; i < numEntries; i++) {
-        // Check valid name
+        // Check valid name        
         if (parent[i].name != NULL || strlen(parent[i].name) != 0) {
             if (strcmp(parent[i].name, name) == 0) {
                 return i; // Index of where the directory is found
