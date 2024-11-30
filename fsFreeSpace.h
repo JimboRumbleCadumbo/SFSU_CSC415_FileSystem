@@ -20,5 +20,4 @@
 #include "fsReadWrite.h"
 
 int initializeFAT(int blockSize, int numBlocks);
-int releaseBlocks(int numToRelease, int startingBlock);
 #endif

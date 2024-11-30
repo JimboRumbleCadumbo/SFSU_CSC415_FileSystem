@@ -55,10 +55,12 @@ DE * loadDir(DE *dir) {
     bytesNeeded = blocksNeeded * vcb->blockSize;
     DE *new = (DE *)malloc(bytesNeeded);
     discontinuousRead(dir->location, new);
+
     if (new == NULL) {
-        printf("Error with reading");
+        printf("[[Critical]] Failed to read directory\n");
         return NULL;
     }
+
     return new;
 }
 
@@ -76,6 +78,7 @@ int findInDir(DE *parent, char *name) {
     if (parent == NULL || name == NULL) {
         return -2; // sentinel value for invalid input args
     }
+
     int numEntries = parent[0].size / sizeof(DE);
     for (int i = 0; i < numEntries; i++) {
         // Check valid name
@@ -85,6 +88,7 @@ int findInDir(DE *parent, char *name) {
             }
         }
     }
+
     return -1; // Directory not found
 }
 
@@ -98,11 +102,13 @@ int findInDir(DE *parent, char *name) {
  */
 int firstUnusedDirEntry(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
+
     for (int i = 0; i < numEntries; i++) {
         if (parent[i].name[0] == '\0') {
             return i;
         }
     }
+
     return -1; // All entries used
 }
 
@@ -116,12 +122,13 @@ int firstUnusedDirEntry(DE *parent) {
  */
 int isDirEmpty(DE *parent) {
     int numEntries = parent[0].size / sizeof(DE);
+
     for (int i = 2; i < numEntries; i++) {
         if (parent[i].name[0] != '\0') {
-            printf("\nparent[i].name:  %s\n",parent[i].name);
             return 0;
         }
     }
+    
     return 1;
 }
 
@@ -136,7 +143,6 @@ int isDirEmpty(DE *parent) {
  */
 int removeDirectoryEntry(DE *dir, int indexToRemove) {
     if (dir == NULL || indexToRemove < 0 || indexToRemove >= ENTRIES_IN_DIR) {
-        printf("Invalid input for directory removal.\n");
         return -1;
     }
 

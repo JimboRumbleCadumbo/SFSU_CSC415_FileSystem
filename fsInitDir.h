@@ -14,10 +14,11 @@
 #ifndef FSINITDIR_H
 #define FSINITDIR_H
 #include <time.h>
-#include "fsFreeSpaceAllo.h"
-#include "fsReadWrite.h"
-#include "structs.h"    
+
 #include "fsLow.h"
+#include "structs.h"    
+#include "fsReadWrite.h"
+#include "fsFreeSpaceAllo.h"
 
 DE * createDirectory(int numEntries, DE *parent);
 int writeDir(DE *dir);

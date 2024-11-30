@@ -42,10 +42,9 @@
  *
  **************************************************************/
 // essential imports
-#include "b_io.h"
 
+#include "b_io.h"
 #include "fsLow.h"
-#include <stdlib.h>
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE vcb->blockSize

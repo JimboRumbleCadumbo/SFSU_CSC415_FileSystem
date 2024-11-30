@@ -14,17 +14,17 @@
  *
  **************************************************************/
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
-#include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
-#include "b_io.h"
 #include "mfs.h"
+#include "b_io.h"
 #include "fsLow.h"
-#include "fsFreeSpace.h"
 #include "fsInitDir.h"
+#include "fsFreeSpace.h"
 
 // Initialize global variable locally for use.
 VCB *vcb = NULL;
@@ -59,8 +59,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 	if (vcb == NULL)
 	{
-		fprintf(stderr, "Error: LBAread returned NULL\n");
-		return -1; // Handle error appropriate
+		return -1;
 	}
 
 	// If the signature doesn't match or does not exist, format the VCB
@@ -72,16 +71,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);
 		root = createDirectory(50, NULL);
 
-		// ------ For Testing Purposes ------ //
-		// printf("\nsignature: %X\n", vcb->signature);
-		// printf("\nnumBlocks: %d\n", vcb->numBlocks);
-		// printf("\nblockSize: %d\n", vcb->blockSize);
-		// printf("\ntableLoc: %d\n", vcb->tableLoc);
-		// printf("\nrootLoc: %d\n", vcb->rootLoc);
-		// ---------------------------------- //
-
 		LBAwrite(vcb, 1, 0);
-		printf("\n\nDisk Initialized... \n\n");
+		printf("\nDisk Initialized... \n\n");
 	}
 	else
 	{
@@ -93,11 +84,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 		if (fat == NULL)
 		{
-			printf("Malloc failed\n");
+			printf("[[Critical]] FAT table allocation failed\n");
+			return -1;
 		}
 
 		LBAread(fat, numBlocksInFat, vcb->tableLoc);
-		// printf("Sanity check for fat in memory %d \n %d \n %d\n", fat[0], fat[1], fat[152]);
 
 		int numBytesInRoot = (sizeof(DE) * 50);
 		int numBlocksInRoot = (numBytesInRoot + (vcb->blockSize - 1)) / vcb->blockSize;
@@ -105,13 +96,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 		if (root == NULL)
 		{
-			printf("Malloc for root failed\n");
+			printf("[[Critical]] Root directory allocation failed\n");
+			return -1;
 		}
 
 		LBAread(root, numBlocksInRoot, vcb->rootLoc);
 
-		// printf("Sanity check for root %s\n", root[0].name);
-		printf("\n\nRead Complete...... \n\n");
+		printf("\nRead Complete...... \n\n");
 	}
 	// Initialize current working directory as the root directory
 	int numBytesInDir = (sizeof(DE) * 50);
@@ -119,7 +110,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	cwd = malloc(numBlocksInDir * vcb->blockSize);
 	if (cwd == NULL)
 	{
-		printf("Malloc for CWD failed\n");
+		printf("[[Critical]] Current working directory allocation failed\n");
 	}
 	// Set current working directory to root directory at init
 	cwd = root;

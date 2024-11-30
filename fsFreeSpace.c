@@ -40,7 +40,6 @@ int initializeFAT(int blockSize, int numBlocks) {
     if (fat == NULL) {
         return -1; // Memory allocation failed
     }
-    printf("Total blocks: %d\n", totalBlocks);
 
     // link everything together 0 by itself and then block 1-2, 3-4 etc 
     // and thats how the total is FAT i is i+1 
@@ -64,10 +63,9 @@ int initializeFAT(int blockSize, int numBlocks) {
     
     // Write the FAT to disk
     if (discontinuousWrite(1, fat) != totalBlocks) {
-        printf("Writing failed");
+        printf("[[Critical]] FAT failed writing to disk\n");
         free(fat);
         fat = NULL;
-        printf("Freed FAT\n");
 
         return -1; // Write failed
     }

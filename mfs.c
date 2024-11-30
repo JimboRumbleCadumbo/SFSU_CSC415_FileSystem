@@ -24,6 +24,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     {
         return -1; // Empty path
     }
+
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -35,23 +36,22 @@ int fs_mkdir(const char *pathname, mode_t mode)
     {
         return -1; // Invalid path / parse error / directory already exists
     }
-    printf("Finished parsing path. %p is the root; %p is retParent.\n", root, retParent);
+    
     DE *loadedDir = loadDir(retParent);
     if (loadedDir == NULL)
     {
         freeDir(retParent);
-        printf("Error loading directory.\n");
-        return -1; // error loading
+        return -1;
     }
+
     int idx = firstUnusedDirEntry(loadedDir);
-    printf("The first unused directory entry in the parent directory is %d.\n", idx);
     DE *newDir = createDirectory(ENTRIES_IN_DIR, loadedDir);
     if (newDir == NULL)
     {
-        printf("Creating directory failed.\n");
         freeDir(retParent);
         return -1;
     }
+
     strcpy(loadedDir[idx].name, lastElemName);
     loadedDir[idx].isDirectory = 1;
     loadedDir[idx].location = newDir->location;
@@ -60,18 +60,16 @@ int fs_mkdir(const char *pathname, mode_t mode)
     loadedDir[idx].timeModified = newDir->timeModified;
     if (writeDir(loadedDir) < 1)
     {
-        printf("Failed to write directories.\n");
         freeDir(retParent);
         return -1;
     }
+
     freeDir(retParent);
-    printf("Success.\n");
     return 0;
 }
 
 int fs_rmdir(const char *pathname)
 {
-    printf("\nfs_rmdir \n");
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -82,24 +80,23 @@ int fs_rmdir(const char *pathname)
     if (result < 0 || index < 0)
     {
         // Directory not found
-        printf("Cannot remove directory, invalid path or directory not found.\n");
         return -1; // Invalid path / parse error / directory already exists
     }
-    printf("Starting remove directory on %s\n", retParent[index].name);
+
     if (retParent[index].location == root->location) {
-        printf("Can't remove the root directory.\n");
+        printf("[[Critical]] Cannot remove root directory.\n");
         freeDir(retParent);
         return -1;
     }
     if (retParent[index].location == cwd->location) {
-        printf("Can't remove the current working directory.\n");
+        printf("[[Critical]] Cannot remove current working directory.\n");
         freeDir(retParent);
         return -1;
     }
     DE *target = loadDir(&retParent[index]);
     if (isDirEmpty(target) == 0)
     {
-        printf("Cannot remove directory, directory is not empty.\n");
+        printf("[[Critical]] Cannot remove non-empty directory.\n");
         freeDir(retParent);
         return -1;
     }
@@ -108,12 +105,10 @@ int fs_rmdir(const char *pathname)
     int releaseResult = releaseBlocks(blocksToRelease, target->location);
     if (releaseResult < 0)
     {
-        printf("Failed to release blocks.\n");
         freeDir(retParent);
         freeDir(target);
         return -1;
     }
-    //freeDir(target);
 
     memset(&retParent[index], 0, sizeof(DE));
     removeDirectoryEntry(retParent, index);
@@ -121,7 +116,6 @@ int fs_rmdir(const char *pathname)
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
     {
-        printf("Failed to write back directory.\n");
         freeDir(retParent);
         return -1;
     }
@@ -133,7 +127,6 @@ int fs_rmdir(const char *pathname)
 // Directory iteration functions
 fdDir *fs_opendir(const char *pathname)
 {
-    printf("Starting open directory on %s\n", pathname);
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -142,37 +135,34 @@ fdDir *fs_opendir(const char *pathname)
     {
         return NULL;
     }
+
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
     path = NULL;
     if (result < 0 || index < 0)
     {
-        printf("Error parsing path.\n");
         return NULL;
     }
-    printf("Successfully parsed path.\n");
+
     fdDir *openedDir = (fdDir *)malloc(sizeof(fdDir));
     if (openedDir == NULL)
     {
-        printf("Error allocating memory for fdDir struct.\n");
         return NULL;
     }
-    printf("Successfully allocated memory for fdDir struct.\n");
+
     openedDir->d_reclen = sizeof(fdDir);
     DE *loadedDir = loadDir(&retParent[index]);
     if (loadedDir == NULL)
     {
-        printf("Error loading directory.\n");
         free(openedDir);
         openedDir = NULL;
         return NULL;
     }
-    printf("Successfully loaded directory.\n");
+
     openedDir->directory = loadedDir;
     struct fs_diriteminfo *di = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
     if (di == NULL)
     {
-        printf("Error allocating fs_diriteminfo struct.\n");
         free(openedDir);
         openedDir = NULL;
         freeDir(loadedDir);
@@ -181,16 +171,16 @@ fdDir *fs_opendir(const char *pathname)
     strcpy(di->d_name, pathname);
     openedDir->dirEntryPosition = 0;
     openedDir->di = di;
-    printf("Successfully opened directory.\n");
+
     return openedDir;
 }
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
     if (dirp == NULL) {
-        printf("Invalid input.\n");
         return NULL;
     }
+
     while (dirp->dirEntryPosition < ENTRIES_IN_DIR) {
         int pos = dirp->dirEntryPosition;
         
@@ -228,7 +218,6 @@ int fs_closedir(fdDir *dirp)
 
     free(dirp);
     dirp = NULL;
-    printf("Successfully closed directory.\n");
     return 0; // Close success
 }
 
@@ -244,10 +233,8 @@ char *fs_getcwd(char *pathname, size_t size)
 
 int fs_setcwd(char *pathname)
 { // linux chdir
-    printf("Starting set CWD function.\n");
     if (pathname == NULL || strlen(pathname) == 0 || strcmp(pathname, "/") == 0)
     {
-        printf("Setting path to root directory.\n");
         freeDir(cwd);
         cwd = root;
         char *rootPath = "/";
@@ -263,20 +250,16 @@ int fs_setcwd(char *pathname)
     int result = parsePath(pathname, &retParent, &index, lastElemName);
     if (index == -1 || retParent == NULL)
     {
-        printf("Index is -1 or retParent is null.\n");
         return -1; // Safety check
     }
     if (result == -1 || retParent[index].isDirectory == 0)
     {
-        printf("Invalid path or directory not found or not directory.\n");
         return -1; // Invalid path or not directory or directory not found
     }
 
-    printf("Loading directory.\n");
     DE *temp = loadDir(&retParent[index]);
     if (temp < 0)
     {
-        printf("Error loading directory.\n");
         return -1;
     }
     // Free the previous cwd
@@ -308,7 +291,6 @@ int fs_setcwd(char *pathname)
     // Copy the original path into tempCwdString for tokenization
     strncpy(tempCwdString, newCwdString, MAX_PATH_LENGTH - 1);
     tempCwdString[MAX_PATH_LENGTH - 1] = '\0'; // Ensure null termination
-    printf("Current path: %s\n", tempCwdString);
 
     // Tokenize and process the path
     char *token;
@@ -352,7 +334,6 @@ int fs_setcwd(char *pathname)
     strncpy(cwdString, newCwdString, MAX_PATH_LENGTH - 1);
     cwdString[MAX_PATH_LENGTH - 1] = '\0';
 
-    printf("New CWD string: %s\n", cwdString);
     return 0;
 }
 
@@ -423,7 +404,6 @@ int fs_stat(const char *path, struct fs_stat *buf)
     buf->st_modtime = retParent[index].timeModified;
 
     // We aren't tracking access time in our DE struct (structs.h)
-    // buf->st_accesstime = time(NULL); // Placeholder
 
     // 1 for Directory, 0 for File
     buf->st_mode = retParent[index].isDirectory;
@@ -431,12 +411,8 @@ int fs_stat(const char *path, struct fs_stat *buf)
     return 0;
 }
 
-/**
- * Waiting for b_open & b_close to finish for testing, might need debug.
- */
 int fs_delete(char *filename)
 { // removes a file
-    printf("\npfs_delete \n");
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -448,11 +424,10 @@ int fs_delete(char *filename)
     if (result < 0 || index < 0)
     {
         // Directory not found
-        printf("Cannot remove file. Invalid path or file not found.\n");
         freeDir(retParent);
         return -1; // Invalid path / parse error / directory already exists
     }
-    printf("Starting remove file on %s\n", retParent[index].name);
+
     if (retParent[index].size > 0)
     {
         DE *target = loadDir(&retParent[index]);
@@ -460,7 +435,6 @@ int fs_delete(char *filename)
         int releaseResult = releaseBlocks(target->size / vcb->blockSize, target->location);
         if (releaseResult < 0)
         {
-            printf("Failed to release blocks.\n");
             freeDir(retParent);
             return -1;
         }
@@ -472,7 +446,6 @@ int fs_delete(char *filename)
     int writeBackResult = writeDir(retParent);
     if (writeBackResult < 0)
     {
-        printf("Failed to write back file.\n");
         freeDir(retParent);
         return -1;
     }

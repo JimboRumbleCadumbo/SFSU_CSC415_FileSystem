@@ -17,14 +17,14 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
+#include <time.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>	
 #include <string.h>	
-#include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <time.h>
+#include <sys/types.h>
 
 #define END_OF_CHAIN 0xFFFFFFFF
 #define MAX_PATH_LENGTH 1024
@@ -33,12 +33,12 @@
 
 
 typedef struct VCB {
-    int signature; // Signature
-    int numBlocks; // number of blocks in the filesystem
-    int blockSize; // size of the blocks
-    int tableLoc; // location of the first block of the FAT table
-    int rootLoc; // location of the root directory
-    int freeSpaceLoc; // the first index of free space
+    int signature;      // Signature
+    int numBlocks;      // number of blocks in the filesystem
+    int blockSize;      // size of the blocks
+    int tableLoc;       // location of the first block of the FAT table
+    int rootLoc;        // location of the root directory
+    int freeSpaceLoc;   // the first index of free space
 } VCB;
 
 typedef struct DE {

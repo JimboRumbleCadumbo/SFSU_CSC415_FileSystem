@@ -13,8 +13,8 @@
 **************************************************************/
 #ifndef FSREADWRITE_H
 #define FSREADWRITE_H
-#include "structs.h"
 #include "fsLow.h"
+#include "structs.h"
 #include "fsFreeSpaceAllo.h"
 
 int discontinuousWrite(int startingBlock, void *buffer);

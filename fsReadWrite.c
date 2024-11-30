@@ -73,7 +73,7 @@ int discontinuousRead(int startingBlock, void *buffer) {
         currentBlock = fat[currentBlock];
         i++;
         if(i > vcb->numBlocks){
-            printf("\nExceeding vcb numBlocks, EOC not found.\n");
+            printf("[disconti-Read] Exceeding FAT table size");
             return -1;
         }
     }

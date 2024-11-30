@@ -17,18 +17,18 @@
 
 #ifndef _MFS_H
 #define _MFS_H
-#include <sys/types.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "b_io.h"
 #include "fsPath.h"
-#include "fsInitDir.h"
 #include "structs.h"
+#include "fsInitDir.h"
 #include "fsDirUtility.h"
-#include <string.h>
 
-#include <dirent.h>
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR
 #define FT_LINK	DT_LNK
@@ -58,12 +58,12 @@ struct fs_diriteminfo
 // calls the function readdir, you give the next entry in the directory
 typedef struct
 	{
-	/*****TO DO:  Fill in this structure with what your open/read directory needs  *****/
-	unsigned short  d_reclen;		/* length of this record */
-	unsigned short	dirEntryPosition;	/* which directory entry position, like file pos */
-	DE *	directory;			/* Pointer to the loaded directory you want to iterate */
-	struct fs_diriteminfo * di;		/* Pointer to the structure you return from read */
-	int validEntriesInDir; /* Number of valid entries in the directory: for gaps in ls after an rm*/
+    unsigned short d_reclen;        /* length of this record */
+    unsigned short dirEntryPosition;/* which directory entry position, like file pos */
+    int validEntriesInDir;          /* Number of valid entries in the directory
+									   :for gaps in ls after an rm*/
+    DE *directory;                  /* Pointer to the loaded directory you want to iterate */
+    struct fs_diriteminfo *di;      /* Pointer to the structure you return from read */
 	} fdDir;
 
 // Key directory functions

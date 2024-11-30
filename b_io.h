@@ -14,17 +14,19 @@
 
 #ifndef _B_IO_H
 #define _B_IO_H
+
+#include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>			// for malloc
-#include <string.h>			// for memcpy
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <time.h>
-#include "structs.h"
+#include <unistd.h>
+#include <stdlib.h>	
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "fsPath.h"
+#include "structs.h"
 #include "fsInitDir.h"
 
 typedef int b_io_fd;

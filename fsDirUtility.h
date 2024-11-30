@@ -15,8 +15,9 @@
 #define FSDIRUTILITY_H
 #include <stdio.h>
 #include <string.h>
-#include "fsReadWrite.h"
+
 #include "structs.h"    
+#include "fsReadWrite.h"
 
 void freeDir (DE *dir);
 DE * loadDir(DE *dir);
