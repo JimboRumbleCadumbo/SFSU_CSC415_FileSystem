@@ -537,13 +537,13 @@ int b_read(b_io_fd fd, char *buffer, int count)
     int remainingBytesInMyBuffer;
 
     // Calculate bytes available in the buffer
-    printf("Bytes requested: %d\n", count);
+    //printf("Bytes requested: %d\n", count);
     remainingBytesInMyBuffer = fcb->buflen - fcb->index;
-    printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
+    //printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
     // Handle EOF by limiting count to the filesize
     int amountAlreadyDelivered = fcb->filePointer;
-    printf("Amount already delivered: %d\n", amountAlreadyDelivered);
-    printf("File size: %d\n", fcb->fileSize);
+    //printf("Amount already delivered: %d\n", amountAlreadyDelivered);
+    //printf("File size: %d\n", fcb->fileSize);
     if ((count + amountAlreadyDelivered) > fcb->fileSize)
     {
         count = fcb->fileSize - amountAlreadyDelivered;
@@ -553,19 +553,19 @@ int b_read(b_io_fd fd, char *buffer, int count)
             return -1;
         }
     }
-    printf("Bytes requested: %d\n", count);
+    //printf("Bytes requested: %d\n", count);
 
     // part 1 is currently in the buffer and available to satisfy the request
     if (remainingBytesInMyBuffer >= count)
     { // Entire request is satisfied by buffer amount
-        printf("We can satisfy this request with just part 1.\n");
+        //printf("We can satisfy this request with just part 1.\n");
         part1 = count;
         part2 = 0; // Do not need to load anything else
         part3 = 0;
     }
     else
     { // Give the caller the rest of the buffer & calculate pt2 and 3
-        printf("We can't satisfy this request with just part 1.\n");
+        //printf("We can't satisfy this request with just part 1.\n");
         part1 = remainingBytesInMyBuffer;
         part3 = count - remainingBytesInMyBuffer;
         // If there are blocks we can copy directly to the user's buffer, calculate this
@@ -576,9 +576,9 @@ int b_read(b_io_fd fd, char *buffer, int count)
         part3 -= part2;
     }
 
-    printf("Part 1: %d\n", part1);
-    printf("Part 2: %d\n", part2);
-    printf("Part 3: %d\n", part3);
+    //printf("Part 1: %d\n", part1);
+    //printf("Part 2: %d\n", part2);
+    //printf("Part 3: %d\n", part3);
 
     if (part1 > 0)
     { // Copy part1 bytes to user buffer and increment internal buffer position
@@ -616,7 +616,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     bytesReturned = part1 + part2 + part3;
     fcb->filePointer += bytesReturned;
 
-    printf("\n[End b_read]. Returned %d bytes.\n", bytesReturned);
+    //printf("\n[End b_read]. Returned %d bytes.\n", bytesReturned);
 
     return bytesReturned;
 }
