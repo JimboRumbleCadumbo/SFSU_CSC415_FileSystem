@@ -126,6 +126,7 @@ b_io_fd b_open(char *filename, int flags)
     printf("Successfully parsed path. \n");
     printf("Allocating memory for FCB. \n");
     b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
+    memset(fcb, 0, sizeof(b_fcb));
     if (fcb == NULL)
     {
         freeDir(retParent);
@@ -536,7 +537,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 
     // Calculate bytes available in the buffer
     printf("Bytes requested: %d\n", count);
-    remainingBytesInMyBuffer = fcb->buflen - fcb->index;
+    remainingBytesInMyBuffer = B_CHUNK_SIZE - (fcb->filePointer % B_CHUNK_SIZE);
     printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
     // Handle EOF by limiting count to the filesize
     int amountAlreadyDelivered = fcb->filePointer;
@@ -735,10 +736,10 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     printf("Successfully parsed path. \n");
 
     printf("Loading destination directory. \n");
-    DE *destDirectory = loadDir(&retParent2[index2]);
+    DE *destDirectory = retParent2; 
     if (destDirectory == NULL)
     {
-        printf("Error loading source directory.\n");
+        printf("Error loading dest directory.\n");
         freeDir(retParent1);
         freeDir(retParent2);
         return -1;

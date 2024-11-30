@@ -40,9 +40,26 @@ void freeDir (DE *dir) {
  * @param dir The directory TO BE read
  * @return The directory that GOT read
  */
+int findPath(DE *dir) {
+    if (dir == NULL) {
+        printf("Error: Invalid argument\n");
+        return -1; // Invalid argument
+    }
+    if (dir->isDirectory != 1) {
+        printf("Error: Not a directory\n");
+        return -1; // Not a directory
+    }
+    // loadDir(dir[1]);
+    return 0;
+}
 DE * loadDir(DE *dir) {
-    if (dir == NULL || dir->isDirectory != 1) {
+    if (dir == NULL ) {
+        printf("Error: Invalid argument\n");
         return NULL; // Invalid argument
+    }
+    if(dir->isDirectory != 1){
+        printf("Error: Not a directory\n");
+        return NULL; // Not a directory
     }
     if (dir->location == root->location) {
         return root;
