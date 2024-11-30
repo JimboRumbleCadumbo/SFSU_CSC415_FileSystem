@@ -155,13 +155,6 @@ b_io_fd b_open(char *filename, int flags)
             retParent[index].size = 0;
             retParent[index].location = 0;
             retParent[index].timeCreated = now;
-            fcb->fileLocation = retParent[index].location;
-            fcb->filePointer = 0;
-            fcb->fileSize = 0;
-            fcb->index = 0;
-            fcb->buflen = 0;
-            fcb->directoryEntry = retParent;
-            fcb->deIndex = index;
         }
     }
     // Truncate existing file
@@ -182,11 +175,6 @@ b_io_fd b_open(char *filename, int flags)
         retParent[index].isDirectory = 0;
         retParent[index].size = 0;
         retParent[index].location = 0;
-        fcb->fileLocation = retParent[index].location;
-        fcb->filePointer = 0;
-        fcb->fileSize = 0;
-        fcb->index = 0;
-        fcb->buflen = 0;
     }
 
     // Handle O_RDONLY flag
@@ -202,12 +190,6 @@ b_io_fd b_open(char *filename, int flags)
             fcb = NULL;
             return -1;
         }
-
-        fcb->fileLocation = retParent[index].location;
-        fcb->filePointer = 0;
-        fcb->fileSize = retParent[index].size;
-        fcb->index = 0;
-        fcb->buflen = 0;
     }
     // Handle O_WRONLY flag
     //  File can only do write/seek operations
@@ -222,12 +204,6 @@ b_io_fd b_open(char *filename, int flags)
             fcb = NULL;
             return -1;
         }
-
-        fcb->fileLocation = retParent[index].location;
-        fcb->filePointer = 0;
-        fcb->fileSize = retParent[index].size;
-        fcb->index = 0;
-        fcb->buflen = 0;
     }
 
     // Handle O_RDWR flag
@@ -243,12 +219,6 @@ b_io_fd b_open(char *filename, int flags)
             fcb = NULL;
             return -1;
         }
-
-        fcb->fileLocation = retParent[index].location;
-        fcb->filePointer = 0;
-        fcb->fileSize = retParent[index].size;
-        fcb->index = 0;
-        fcb->buflen = 0;
     }
 
     printf("Getting file control block. \n");
@@ -264,11 +234,16 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     printf("Modifying parent directory. \n");
-    fcb->fileDescriptor = returnFd;
-    fcb->fileSize = retParent[index].size;
-    fcb->accessFlags = flags;
     fcb->blockSize = vcb->blockSize;
     fcb->currentBlk = retParent[index].location;
+    fcb->deIndex = index;
+    fcb->directoryEntry = retParent;
+    fcb->fileDescriptor = returnFd;
+    fcb->fileLocation = retParent[index].location;
+    fcb->filePointer = 0;
+    fcb->fileSize = retParent[index].size;
+    fcb->index = 0;
+    fcb->isDirty = 0; // Haven't loaded buffer yet.
     char *buf = malloc(B_CHUNK_SIZE);
     memset(buf, 0, B_CHUNK_SIZE);
 
@@ -281,6 +256,7 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     fcb->buf = buf;
+    fcb->buflen = 0;
     printf("Writing parent directory to disk.\n");
     if (writeDir(retParent) < 1)
     {
