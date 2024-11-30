@@ -8,7 +8,7 @@
  *
  * File:: b_io.c
  *
- * Description:: 
+ * Description::
  * This file (b_io.c) implements the basic file I/O operations for our
  * filesystem project. It provides functions to open, read, write,
  * seek, and close files. The file control block (FCB) structure is
@@ -29,7 +29,7 @@
  * by opening, reading, writing, seeking, and closing files. The
  * implementation ensures that data is buffered efficiently and
  * handles various file operations correctly.
- * 
+ *
  * Flags:
  * - O_CREAT    - Creates a new file if it does not exist.
  *                (ignored if the file does exist)
@@ -98,10 +98,10 @@ b_io_fd b_getFCB()
 
 /**
  * b_io_fd b_open(char *filename, int flags)
- * 
- * Description: Opens a file, retrive data from disk to memory and returns a 
+ *
+ * Description: Opens a file, retrive data from disk to memory and returns a
  * file descriptor
- * 
+ *
  * @param filename: The name of the file to open
  * @param flags: The flags to open the file with
  * @return: The file descriptor of the opened file
@@ -124,7 +124,13 @@ b_io_fd b_open(char *filename, int flags)
     }
     printf("Successfully parsed path. \n");
     printf("Allocating memory for FCB. \n");
-    b_fcb fcb;
+    b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
+    if (fcb == NULL)
+    {
+        freeDir(retParent);
+        printf("Failed to allocate memory for fcb.\n");
+        return -1;
+    }
     time_t now = time(NULL);
     // Create the file if it doesn't exist
     if (flags & O_CREAT)
@@ -138,6 +144,8 @@ b_io_fd b_open(char *filename, int flags)
             {
                 printf("Unused DE not found in parent. \n");
                 freeDir(retParent);
+                free(fcb);
+                fcb = NULL;
                 return -1; // No more unused DEs in the parent
             }
             printf("Found unused DE #%d in parent directory. \n", index);
@@ -146,13 +154,13 @@ b_io_fd b_open(char *filename, int flags)
             retParent[index].size = 0;
             retParent[index].location = 0;
             retParent[index].timeCreated = now;
-            fcb.fileLocation = retParent[index].location;
-            fcb.filePointer = 0;
-            fcb.fileSize = 0;
-            fcb.index = 0;
-            fcb.buflen = 0;
-            fcb.directoryEntry = retParent;
-            fcb.deIndex = index;
+            fcb->fileLocation = retParent[index].location;
+            fcb->filePointer = 0;
+            fcb->fileSize = 0;
+            fcb->index = 0;
+            fcb->buflen = 0;
+            fcb->directoryEntry = retParent;
+            fcb->deIndex = index;
         }
     }
     // Truncate existing file
@@ -163,6 +171,8 @@ b_io_fd b_open(char *filename, int flags)
         {
             printf("File does not exist.\n");
             freeDir(retParent);
+            free(fcb);
+            fcb = NULL;
             return -1;
         }
         int numBytesToRelease = retParent[index].size;
@@ -171,11 +181,11 @@ b_io_fd b_open(char *filename, int flags)
         retParent[index].isDirectory = 0;
         retParent[index].size = 0;
         retParent[index].location = 0;
-        fcb.fileLocation = retParent[index].location;
-        fcb.filePointer = 0;
-        fcb.fileSize = 0;
-        fcb.index = 0;
-        fcb.buflen = 0;
+        fcb->fileLocation = retParent[index].location;
+        fcb->filePointer = 0;
+        fcb->fileSize = 0;
+        fcb->index = 0;
+        fcb->buflen = 0;
     }
 
     // Handle O_RDONLY flag
@@ -187,17 +197,17 @@ b_io_fd b_open(char *filename, int flags)
         {
             printf("File does not exist.\n");
             freeDir(retParent);
+            free(fcb);
+            fcb = NULL;
             return -1;
         }
 
-        fcb.fileLocation = retParent[index].location;
-        fcb.filePointer = 0;
-        fcb.fileSize = retParent[index].size;
-        fcb.index = 0;
-        fcb.buflen = 0;
-        fcb.accessFlags = O_RDONLY;
+        fcb->fileLocation = retParent[index].location;
+        fcb->filePointer = 0;
+        fcb->fileSize = retParent[index].size;
+        fcb->index = 0;
+        fcb->buflen = 0;
     }
-
     // Handle O_WRONLY flag
     //  File can only do write/seek operations
     if (flags & O_WRONLY)
@@ -207,15 +217,16 @@ b_io_fd b_open(char *filename, int flags)
         {
             printf("File does not exist.\n");
             freeDir(retParent);
+            free(fcb);
+            fcb = NULL;
             return -1;
         }
 
-        fcb.fileLocation = retParent[index].location;
-        fcb.filePointer = 0;
-        fcb.fileSize = retParent[index].size;
-        fcb.index = 0;
-        fcb.buflen = 0;
-        fcb.accessFlags = O_WRONLY;
+        fcb->fileLocation = retParent[index].location;
+        fcb->filePointer = 0;
+        fcb->fileSize = retParent[index].size;
+        fcb->index = 0;
+        fcb->buflen = 0;
     }
 
     // Handle O_RDWR flag
@@ -227,15 +238,16 @@ b_io_fd b_open(char *filename, int flags)
         {
             printf("File does not exist.\n");
             freeDir(retParent);
+            free(fcb);
+            fcb = NULL;
             return -1;
         }
 
-        fcb.fileLocation = retParent[index].location;
-        fcb.filePointer = 0;
-        fcb.fileSize = retParent[index].size;
-        fcb.index = 0;
-        fcb.buflen = 0;
-        fcb.accessFlags = O_RDWR;
+        fcb->fileLocation = retParent[index].location;
+        fcb->filePointer = 0;
+        fcb->fileSize = retParent[index].size;
+        fcb->index = 0;
+        fcb->buflen = 0;
     }
 
     printf("Getting file control block. \n");
@@ -246,12 +258,16 @@ b_io_fd b_open(char *filename, int flags)
     {
         printf("All available FCBs are used.\n");
         freeDir(retParent);
+        free(fcb);
+        fcb = NULL;
         return -1;
     }
     printf("Modifying parent directory. \n");
-    fcb.fileDescriptor = returnFd;
-    fcb.accessFlags = flags;
-    fcb.blockSize = vcb->blockSize;
+    fcb->fileDescriptor = returnFd;
+    fcb->fileSize = retParent[index].size;
+    fcb->accessFlags = flags;
+    fcb->blockSize = vcb->blockSize;
+    fcb->currentBlk = retParent[index].location;
     char *buf = malloc(B_CHUNK_SIZE);
     memset(buf, 0, B_CHUNK_SIZE);
 
@@ -259,18 +275,23 @@ b_io_fd b_open(char *filename, int flags)
     {
         printf("Error allocating memory to buffer.\n");
         freeDir(retParent);
+        free(fcb);
+        fcb = NULL;
         return -1;
     }
-    fcb.buf = buf;
+    fcb->buf = buf;
     printf("Writing parent directory to disk.\n");
     if (writeDir(retParent) < 1)
     {
         printf("Error writing parent directory.\n");
         free(buf);
+        buf = NULL;
         freeDir(retParent);
+        free(fcb);
+        fcb = NULL;
         return -1;
     }
-    fcbArray[returnFd] = fcb;
+    fcbArray[returnFd] = *fcb;
     if (flags & O_APPEND)
     {
         printf("Append flag specified.\n");
@@ -288,7 +309,7 @@ b_io_fd b_open(char *filename, int flags)
  *
  * Description: To move the file pointer to a specified location in the file,
  * aka, seek.
- * 
+ *
  * @param fd The file descriptor
  * @param offset The offset from the position specified by whence
  * @param whence The position from which to start
@@ -358,7 +379,7 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
  * int b_write(b_io_fd fd, char *buffer, int count)
  *
  * Description: Writes a specified number of bytes to a file.
- * 
+ *
  * @param fd The file descriptor of the file to write to.
  * @param buffer The pointer to the buffer containing the data to write.
  * @param count The number of bytes to write.
@@ -496,9 +517,9 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 /**
  * int b_read(b_io_fd fd, char *buffer, int count)
- * 
+ *
  * Description: Reads a specified number of bytes from a file in the disk.
- * 
+ *
  * @param fd The file descriptor of the file to read from.
  * @param buffer The pointer to the buffer to store the read data.
  * @param count The number of bytes to read
@@ -542,7 +563,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     remainingBytesInMyBuffer = fcb->buflen - fcb->index;
     printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
     // Handle EOF by limiting count to the filesize
-    int amountAlreadyDelivered = (fcb->currentBlk * B_CHUNK_SIZE) - remainingBytesInMyBuffer;
+    int amountAlreadyDelivered = fcb->filePointer;
     printf("Amount already delivered: %d\n", amountAlreadyDelivered);
     printf("File size: %d\n", fcb->fileSize);
     if ((count + amountAlreadyDelivered) > fcb->fileSize)
@@ -554,6 +575,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
             return -1;
         }
     }
+    printf("Bytes requested: %d\n", count);
 
     // part 1 is currently in the buffer and available to satisfy the request
     if (remainingBytesInMyBuffer >= count)
@@ -617,6 +639,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
         }
     }
     bytesReturned = part1 + part2 + part3;
+    fcb->filePointer += bytesReturned;
 
     printf("\n[End b_read]. Returned %d bytes.\n", bytesReturned);
 
@@ -627,9 +650,9 @@ int b_read(b_io_fd fd, char *buffer, int count)
 /**
  * int b_close(b_io_fd fd)
  *
- * Description: Close file and clean up resources, and writes data to disk when 
+ * Description: Close file and clean up resources, and writes data to disk when
  * current working block is empty.
- * 
+ *
  * @param fd The file descriptor to close
  * @return 0 on success, -1 on error
  */
@@ -699,9 +722,9 @@ int b_close(b_io_fd fd)
 
 /**
  * int b_move(char *pathnameSrc, char *pathnameDest)
- * 
+ *
  * Description: Moves a file from one directory to another.
- * 
+ *
  * @param pathnameSrc The path of the source file.
  * @param pathnameDest The path of the destination directory.
  * @return 0 on success, -1 on error.

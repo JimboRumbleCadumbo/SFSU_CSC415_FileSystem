@@ -151,7 +151,7 @@ int discontinuousPartialRead(int startingBlock, void *buffer, int numBlocksToRea
     // Return check for ensuring
     if(blocksRead - numBlocksToRead != 0){
         printf("blocksRead is not equal to numBlocksToRead......\n");
-        return -1;
+        return blocksRead;
     }
 
     return blocksRead;
