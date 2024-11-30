@@ -17,14 +17,14 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#include <time.h>
-#include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>	
 #include <string.h>	
-#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
 
 #define END_OF_CHAIN 0xFFFFFFFF
 #define MAX_PATH_LENGTH 1024

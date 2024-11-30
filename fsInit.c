@@ -14,17 +14,17 @@
  *
  **************************************************************/
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <string.h>
 #include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "mfs.h"
 #include "b_io.h"
+#include "mfs.h"
 #include "fsLow.h"
-#include "fsInitDir.h"
 #include "fsFreeSpace.h"
+#include "fsInitDir.h"
 
 // Initialize global variable locally for use.
 VCB *vcb = NULL;

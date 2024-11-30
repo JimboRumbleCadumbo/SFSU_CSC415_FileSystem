@@ -15,20 +15,18 @@
 #ifndef _B_IO_H
 #define _B_IO_H
 
-#include <time.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <stdlib.h>	
-#include <string.h>
-#include <sys/stat.h>
+#include <stdlib.h>			
+#include <string.h>			
 #include <sys/types.h>
-
-#include "fsPath.h"
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <time.h>
 #include "structs.h"
+#include "fsPath.h"
 #include "fsInitDir.h"
-
 typedef int b_io_fd;
 
 void b_init();

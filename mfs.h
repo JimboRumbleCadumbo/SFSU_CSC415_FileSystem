@@ -17,17 +17,17 @@
 
 #ifndef _MFS_H
 #define _MFS_H
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
-#include <dirent.h>
 #include <sys/types.h>
+#include <unistd.h>
+#include <time.h>
 
 #include "b_io.h"
 #include "fsPath.h"
-#include "structs.h"
 #include "fsInitDir.h"
+#include "structs.h"
 #include "fsDirUtility.h"
+#include <string.h>
+#include <dirent.h>
 
 #define FT_REGFILE	DT_REG
 #define FT_DIRECTORY DT_DIR

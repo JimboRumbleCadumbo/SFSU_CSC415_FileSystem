@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "structs.h"    
 #include "fsReadWrite.h"
+#include "structs.h"    
 
 void freeDir (DE *dir);
 DE * loadDir(DE *dir);
