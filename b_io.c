@@ -61,6 +61,7 @@ typedef struct b_fcb
     int accessFlags;    // flags for O_RDONLY, O_WRONLY, O_RDWR
     int isDirty;        // holder for dirty buffer. 1 if dirty, 0 if not
     int deIndex;        // index of the directory entry
+    int currentBlk;     // current block for b_read
     DE *directoryEntry; // pointer to the directory entry
 } b_fcb;
 
@@ -282,6 +283,7 @@ b_io_fd b_open(char *filename, int flags)
     fcbArray[returnFd] = fcb;
     if (flags & O_APPEND)
     {
+        printf("Append flag specified.\n");
         b_seek(returnFd, 0, SEEK_END);
     }
     freeDir(retParent);
@@ -541,56 +543,101 @@ int b_read(b_io_fd fd, char *buffer, int count)
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
     {
+        printf("Invalid file descriptor.\n");
         return -1; // File not open
     }
 
-    // Calculate the number of bytes to read
-    int bytesToRead = count;
-    if (fcb->filePointer + bytesToRead > fcb->fileSize)
+    int blocksRead;
+    int bytesRead;
+    int bytesReturned;
+    int part1, part2, part3;
+    int numBlocksToCopy;
+    int remainingBytesInMyBuffer;
+
+    // Calculate bytes available in the buffer
+    printf("Bytes requested: %d\n", count);
+    remainingBytesInMyBuffer = fcb->buflen - fcb->index;
+    printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
+    // Handle EOF by limiting count to the filesize
+    int amountAlreadyDelivered = (fcb->currentBlk * B_CHUNK_SIZE) - remainingBytesInMyBuffer;
+    printf("Amount already delivered: %d\n", amountAlreadyDelivered);
+    printf("File size: %d\n", fcb->fileSize);
+    if ((count + amountAlreadyDelivered) > fcb->fileSize)
     {
-        bytesToRead = fcb->fileSize - fcb->filePointer; // Adjust bytes to read if it exceeds file size
+        count = fcb->fileSize - amountAlreadyDelivered;
+        if (count < 0)
+        {
+            printf("Error: negative count\n");
+            return -1;
+        }
     }
 
-    int totalBytesRead = 0;
-    while (bytesToRead > 0)
-    {
-        // Check if buffer needs to be refilled
-        if (fcb->index >= fcb->buflen)
-        {
-            // Calculate the block number to read from
-            int blockNumber = fcb->filePointer / fcb->blockSize;
-            int blockOffset = fcb->filePointer % fcb->blockSize;
-
-            // Read the block into the buffer
-            fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
-            if (fcb->buflen < 0)
-            {
-                return -1; // Error reading file
-            }
-            fcb->index = blockOffset;
-        }
-
-        // Calculate the number of bytes to copy from the buffer
-        int bytesFromBuffer = fcb->buflen - fcb->index;
-        if (bytesFromBuffer > bytesToRead)
-        {
-            bytesFromBuffer = bytesToRead;
-        }
-
-        // Copy data from the buffer to the user's buffer
-        memcpy(buffer + totalBytesRead, fcb->buf + fcb->index, bytesFromBuffer);
-
-        // Update pointers and counters
-        fcb->index += bytesFromBuffer;
-        fcb->filePointer += bytesFromBuffer;
-        totalBytesRead += bytesFromBuffer;
-        bytesToRead -= bytesFromBuffer;
+    // part 1 is currently in the buffer and available to satisfy the request
+    if (remainingBytesInMyBuffer >= count)
+    { // Entire request is satisfied by buffer amount
+        printf("We can satisfy this request with just part 1.\n");
+        part1 = count;
+        part2 = 0; // Do not need to load anything else
+        part3 = 0;
+    }
+    else
+    { // Give the caller the rest of the buffer & calculate pt2 and 3
+        printf("We can't satisfy this request with just part 1.\n");
+        part1 = remainingBytesInMyBuffer;
+        part3 = count - remainingBytesInMyBuffer;
+        // If there are blocks we can copy directly to the user's buffer, calculate this
+        numBlocksToCopy = part3 / B_CHUNK_SIZE;
+        part2 = numBlocksToCopy * B_CHUNK_SIZE;
+        // Set part3 to the remaining bytes left to copy
+        // Part3 will be loaded into the intermediary buffer rather than the user's buf directly
+        part3 -= part2;
     }
 
-    printf("\n[End b_read]\n");
+    printf("Part 1: %d\n", part1);
+    printf("Part 2: %d\n", part2);
+    printf("Part 3: %d\n", part3);
 
-    // Return the number of bytes read
-    return totalBytesRead;
+    if (part1 > 0)
+    { // Copy part1 bytes to user buffer and increment internal buffer position
+        memcpy(buffer, fcb->buf + fcb->index, part1);
+        fcb->index += part1;
+    }
+    if (part2 > 0)
+    { // Read from disk directly to user buffer
+        blocksRead = discontinuousPartialRead(fcb->currentBlk, buffer + part1, numBlocksToCopy);
+        // Get the location of the new current block
+        for (int i = 0; i < numBlocksToCopy; i++)
+        {
+            fcb->currentBlk = fat[fcb->currentBlk];
+        }
+        // Update with the actual value of how much was read
+        part2 = blocksRead * B_CHUNK_SIZE;
+    }
+    if (part3 > 0)
+    { // Need to load the intermediary buffer
+        blocksRead = discontinuousPartialRead(fcb->currentBlk, fcb->buf, 1);
+        // Update with the actual value of how much was read
+        bytesRead = blocksRead * B_CHUNK_SIZE;
+        fcb->currentBlk = fat[fcb->currentBlk];
+        // Reset buffer values
+        fcb->index = 0;
+        fcb->buflen = bytesRead;
+
+        if (bytesRead < part3)
+        { // Not enough left to satisfy read request from caller
+            part3 = bytesRead;
+        }
+        if (part3 > 0)
+        {
+            memcpy(buffer + part1 + part2, fcb->buf + fcb->index, part3);
+            fcb->index += part3;
+        }
+    }
+    bytesReturned = part1 + part2 + part3;
+
+    printf("\n[End b_read]. Returned %d bytes.\n", bytesReturned);
+
+    return bytesReturned;
 }
 
 // Interface to Close the file
