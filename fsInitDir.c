@@ -86,11 +86,11 @@ DE * createDirectory(int numEntries, DE *parent) {
  * @return The number of blocks that got written into disk.
  */
 int writeDir(DE *dir) {
-    int blocks = (dir[0].size + (vcb->blockSize - 1))/vcb->blockSize;
+    int blocks = (sizeof(DE) * ENTRIES_IN_DIR + (vcb->blockSize - 1))/vcb->blockSize;
     int blocksWritten = discontinuousWrite(dir->location, dir);
 
     if (blocks != blocksWritten) {
-        printf("[[Critical]] Failed to write/create directory.\n");
+        printf("[[Critical]] Failed to write/create directory. blocks written: %d out of %d\n", blocksWritten, blocks);
         return -1;
     }
 

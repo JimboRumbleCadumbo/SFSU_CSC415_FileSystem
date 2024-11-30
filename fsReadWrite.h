@@ -13,6 +13,7 @@
 **************************************************************/
 #ifndef FSREADWRITE_H
 #define FSREADWRITE_H
+#include <sys/types.h>
 #include "structs.h"
 #include "fsLow.h"
 #include "fsFreeSpaceAllo.h"

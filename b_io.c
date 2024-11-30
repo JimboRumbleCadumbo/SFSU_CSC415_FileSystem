@@ -539,7 +539,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is write-only
-    if (fcb->accessFlags & O_WRONLY || fcb->accessFlags & O_RDWR)
+    if (fcb->accessFlags & O_WRONLY)
     {
         printf("Error: File is write-only. Cannot read from it.\n");
         return -1;

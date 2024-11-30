@@ -56,6 +56,10 @@ int allocateBlocks(int numBlocks) {
             vcb->freeSpaceLoc = nextFreeBlock;
         } 
         else {
+            if (currentBlock == END_OF_CHAIN) {
+                printf("Reached end of chain on block %d of %d to be allocated.\n", i, numBlocks);
+                return -1;
+            }
             fat[currentBlock] = nextFreeBlock;
             currentBlock = nextFreeBlock;
         }
