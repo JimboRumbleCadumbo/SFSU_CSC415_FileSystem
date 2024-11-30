@@ -8,35 +8,37 @@
  *
  * File:: b_io.c
  *
- * Description::What this files does and how it contributes to our File System project.
+ * Description:: 
  * This file (b_io.c) implements the basic file I/O operations for our
  * filesystem project. It provides functions to open, read, write,
  * seek, and close files. The file control block (FCB) structure is
  * used to manage open files and their associated buffers. The key
  * functions in this file include:
  *
- * - b_init(): Initializes the file system by setting up the FCB array.
- * - b_getFCB(): Retrieves a free FCB element.
- * - b_open(): In our open function we are opening a file
- *   and also make sure that the flags below work properly.
- * O_CREAT   - Creates a new file is it does not exist (ignored if the file does exist)
- *O_TRUNC  - Set the file length to 0 (truncates all data)
- *O_APPEND   - Sets the file position to the end of the file
- *(Same as doing a seek 0 from SEEK_END)
- *O_RDONLY   - File can only do read/seek operations
- *O_WRONLY  - File can only do write/seek operations
- *O_RDWR   - File can be read or written to
- *   necessary, and returns a file descriptor.
- * - b_read(): Reads data from an open file into a buffer.
- * - b_write(): Writes data from a buffer to an open file.
- * - b_seek(): Changes the file pointer position for an open file.
- * - b_close(): Closes an open file and frees associated resources.
+ * Functions:
+ * - b_init()   - Initializes the file system by setting up the FCB array.
+ * - b_getFCB() - Retrieves a free FCB element.
+ * - b_open()   - Opens a file and retrive data from disk.
+ * - b_read()   - Reads data from an open file into a buffer.
+ * - b_write()  - Writes data from a buffer to an open file.
+ * - b_seek()   - Changes the file pointer position for an open file.
+ * - b_close()  - Closes an open file and frees associated resources.
  *
  * These functions work together to provide a basic interface for
  * file operations, allowing users to interact with the filesystem
  * by opening, reading, writing, seeking, and closing files. The
  * implementation ensures that data is buffered efficiently and
  * handles various file operations correctly.
+ * 
+ * Flags:
+ * - O_CREAT    - Creates a new file if it does not exist.
+ *                (ignored if the file does exist)
+ * - O_TRUNC    - Set the file length to 0 (truncates all data)
+ * - O_APPEND   - Sets the file position to the end of the file
+ *                (Same as doing a seek 0 from SEEK_END)
+ * - O_RDONLY   - File can only do read/seek operations
+ * - O_WRONLY   - File can only do write/seek operations
+ * - O_RDWR     - File can be read or written to.
  *
  **************************************************************/
 // essential imports
@@ -95,7 +97,14 @@ b_io_fd b_getFCB()
 }
 
 /**
- * TODO: Make sure all the variables are initialized properly for each flag cases
+ * b_io_fd b_open(char *filename, int flags)
+ * 
+ * Description: Opens a file, retrive data from disk to memory and returns a 
+ * file descriptor
+ * 
+ * @param filename: The name of the file to open
+ * @param flags: The flags to open the file with
+ * @return: The file descriptor of the opened file
  */
 b_io_fd b_open(char *filename, int flags)
 {
@@ -158,13 +167,6 @@ b_io_fd b_open(char *filename, int flags)
         }
         int numBytesToRelease = retParent[index].size;
         int blocksToRelease = (numBytesToRelease + (vcb->blockSize - 1)) / vcb->blockSize;
-        // printf("Releasing blocks back to free space. \n");
-        // if (releaseBlocks(blocksToRelease, blocksToRelease) < 0)
-        // {
-        //     printf("Error releasing blocks. \n");
-        //     freeDir(retParent);
-        //     return -1;
-        // }
 
         retParent[index].isDirectory = 0;
         retParent[index].size = 0;
@@ -175,21 +177,6 @@ b_io_fd b_open(char *filename, int flags)
         fcb.index = 0;
         fcb.buflen = 0;
     }
-    // if (flags & O_RDONLY){
-    //     printf("[Read ONLY flag specified] \n");
-    //     if (index < 0)
-    //     {
-    //         printf("File does not exist.\n");
-    //         freeDir(retParent);
-    //         return -1;
-    //     }
-
-    //     fcb.fileLocation = retParent[index].location;
-    //     fcb.filePointer = 0;
-    //     fcb.fileSize = retParent[index].size;
-    //     fcb.index = 0;
-    //     fcb.buflen = 0;
-    // }
 
     // Handle O_RDONLY flag
     //  File can only do read/seek operations
@@ -208,6 +195,7 @@ b_io_fd b_open(char *filename, int flags)
         fcb.fileSize = retParent[index].size;
         fcb.index = 0;
         fcb.buflen = 0;
+        fcb.accessFlags = O_RDONLY;
     }
 
     // Handle O_WRONLY flag
@@ -227,6 +215,7 @@ b_io_fd b_open(char *filename, int flags)
         fcb.fileSize = retParent[index].size;
         fcb.index = 0;
         fcb.buflen = 0;
+        fcb.accessFlags = O_WRONLY;
     }
 
     // Handle O_RDWR flag
@@ -246,6 +235,7 @@ b_io_fd b_open(char *filename, int flags)
         fcb.fileSize = retParent[index].size;
         fcb.index = 0;
         fcb.buflen = 0;
+        fcb.accessFlags = O_RDWR;
     }
 
     printf("Getting file control block. \n");
@@ -293,13 +283,16 @@ b_io_fd b_open(char *filename, int flags)
     return (returnFd); // all set
 }
 
-// Interface to seek function
-// also make sure that seek aslo loads the buffer
-
 /**
  * int b_seek(b_io_fd fd, off_t offset, int whence)
  *
- * TODO:: If block dirty, write it to disk
+ * Description: To move the file pointer to a specified location in the file,
+ * aka, seek.
+ * 
+ * @param fd The file descriptor
+ * @param offset The offset from the position specified by whence
+ * @param whence The position from which to start
+ * @return The new file pointer on success, -1 on error
  */
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
@@ -361,15 +354,20 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
     return newPointer; // Return the new file pointer position
 }
 
-// Interface to write function
 /**
  * int b_write(b_io_fd fd, char *buffer, int count)
  *
- * TODO: Add flag conditions
+ * Description: Writes a specified number of bytes to a file.
+ * 
+ * @param fd The file descriptor of the file to write to.
+ * @param buffer The pointer to the buffer containing the data to write.
+ * @param count The number of bytes to write.
+ * @return The number of bytes written, or -1 on error.
  */
 int b_write(b_io_fd fd, char *buffer, int count)
 {
     printf("\n[In b_write]\n");
+
     // Validate the file descriptor
     if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
     {
@@ -380,7 +378,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
     b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is read-only
-    if (fcb->accessFlags & O_RDONLY)
+    if (fcb->accessFlags & O_RDONLY || fcb->accessFlags & O_RDWR)
     {
         printf("Error: File is read-only. Cannot write to it.\n");
         return -1;
@@ -392,8 +390,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
         printf("File is not open or writable.\n");
         return -1;
     }
-
-    // TODO: Allocate blocks on disk for the file
 
     if (fcb->fileSize == 0)
     {
@@ -498,28 +494,15 @@ int b_write(b_io_fd fd, char *buffer, int count)
     return count + p1 + p2;
 }
 
-// Interface to read a buffer
-
-// Filling the callers request is broken into three parts
-// Part 1 is what can be filled from the current buffer, which may or may not be enough
-// Part 2 is after using what was left in our buffer there is still 1 or more block
-//        size chunks needed to fill the callers request.  This represents the number of
-//        bytes in multiples of the blocksize.
-// Part 3 is a value less than blocksize which is what remains to copy to the callers buffer
-//        after fulfilling part 1 and part 2.  This would always be filled from a refill
-//        of our buffer.
-//  +-------------+------------------------------------------------+--------+
-//  |             |                                                |        |
-//  | filled from |  filled direct in multiples of the block size  | filled |
-//  | existing    |                                                | from   |
-//  | buffer      |                                                |refilled|
-//  |             |                                                | buffer |
-//  |             |                                                |        |
-//  | Part1       |  Part 2                                        | Part3  |
-//  +-------------+------------------------------------------------+--------+
-
 /**
- * TODO: make sure all values in fcb struct are read properly
+ * int b_read(b_io_fd fd, char *buffer, int count)
+ * 
+ * Description: Reads a specified number of bytes from a file in the disk.
+ * 
+ * @param fd The file descriptor of the file to read from.
+ * @param buffer The pointer to the buffer to store the read data.
+ * @param count The number of bytes to read
+ * @return The number of bytes read, or -1 on error.
  */
 int b_read(b_io_fd fd, char *buffer, int count)
 {
@@ -534,7 +517,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is write-only
-    if (fcb->accessFlags & O_WRONLY)
+    if (fcb->accessFlags & O_WRONLY || fcb->accessFlags & O_RDWR)
     {
         printf("Error: File is write-only. Cannot read from it.\n");
         return -1;
@@ -644,7 +627,11 @@ int b_read(b_io_fd fd, char *buffer, int count)
 /**
  * int b_close(b_io_fd fd)
  *
- * TODO :: check initialized value, will be related to b_open & read
+ * Description: Close file and clean up resources, and writes data to disk when 
+ * current working block is empty.
+ * 
+ * @param fd The file descriptor to close
+ * @return 0 on success, -1 on error
  */
 
 int b_close(b_io_fd fd)
@@ -710,6 +697,15 @@ int b_close(b_io_fd fd)
     return 0; // Success
 }
 
+/**
+ * int b_move(char *pathnameSrc, char *pathnameDest)
+ * 
+ * Description: Moves a file from one directory to another.
+ * 
+ * @param pathnameSrc The path of the source file.
+ * @param pathnameDest The path of the destination directory.
+ * @return 0 on success, -1 on error.
+ */
 int b_move(char *pathnameSrc, char *pathnameDest)
 {
     DE *retParent1;
