@@ -364,7 +364,7 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
  */
 int b_write(b_io_fd fd, char *buffer, int count)
 {
-    printf("\n[In b_write]\n");
+    //printf("\n[In b_write]\n");
 
     // Validate the file descriptor
     if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
@@ -391,9 +391,10 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     if (fcb->fileSize == 0)
     {
-        printf("[Write] File size is 0, allocate a block for it\n");
+        //printf("[Write] File size is 0, allocate a block for it\n");
         fcb->fileLocation = allocateBlocks(1); // Allocate a block for the file;
         (fcb->directoryEntry + fcb->deIndex)->location = fcb->fileLocation;
+        fcb->currentBlk = fcb->fileLocation;
     }
 
     // P0.5:
@@ -401,7 +402,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // and return.
     if (count < B_CHUNK_SIZE - (fcb->filePointer % B_CHUNK_SIZE))
     {
-        printf("[P0.5] Supplement bytes in current block...\n");
+        //printf("[P0.5] Supplement bytes in current block...\n");
         memcpy(fcb->buf + (fcb->filePointer % B_CHUNK_SIZE), buffer, count);
         fcb->filePointer += count;
         if (fcb->fileSize < fcb->filePointer)
@@ -420,14 +421,14 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // see if current position needs to extend the chain for the incoming count
     if (excessBytes > 0)
     {
-        printf("Excess bytes: %d, extending %d blocks...\n", excessBytes,
-               (excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
+        //printf("Excess bytes: %d, extending %d blocks...\n", excessBytes,
+               //(excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
         extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation);
     }
 
     // p1
     targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
-    printf("[p1]targetBlock:%d, %d blocks moved\n", targetBlock, fcb->filePointer / B_CHUNK_SIZE);
+    //printf("[p1]targetBlock:%d, %d blocks moved\n", targetBlock, fcb->filePointer / B_CHUNK_SIZE);
 
     int existingBytes = fcb->filePointer % B_CHUNK_SIZE;
     p1 = B_CHUNK_SIZE - existingBytes;
@@ -450,7 +451,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
     int p2NeededBlocks = count / B_CHUNK_SIZE;
     if (p2NeededBlocks != 0)
     {
-        printf("p2 needed blocks: %d\n", p2NeededBlocks);
+        //printf("p2 needed blocks: %d\n", p2NeededBlocks);
         p2 = p2NeededBlocks * B_CHUNK_SIZE;
         fcb->filePointer += p2;
         if (fcb->fileSize < fcb->filePointer)
@@ -468,7 +469,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
     }
 
     // p3
-    printf("[p3]targetBlock:%d\n", targetBlock);
+    //printf("[p3]targetBlock:%d\n", targetBlock);
     int p3Read = discontinuousPartialRead(targetBlock, fcb->buf, 1);
     if (p3Read == -1)
     {
@@ -483,11 +484,11 @@ int b_write(b_io_fd fd, char *buffer, int count)
     }
     fcb->isDirty = 1;
 
-    printf("Write complete. Bytes written: %d\n", count + p1 + p2);
+    //printf("Write complete. Bytes written: %d\n", count + p1 + p2);
     time_t now = time(NULL);
     fcb->directoryEntry->timeModified = now;
 
-    printf("\n[End b_write]\n");
+    //printf("\n[End b_write]\n");
 
     return count + p1 + p2;
 }
@@ -504,7 +505,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
  */
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-    printf("\n[In b_read]\n");
+    //printf("\n[In b_read]\n");
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
@@ -537,7 +538,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 
     // Calculate bytes available in the buffer
     printf("Bytes requested: %d\n", count);
-    remainingBytesInMyBuffer = B_CHUNK_SIZE - (fcb->filePointer % B_CHUNK_SIZE);
+    remainingBytesInMyBuffer = fcb->buflen - fcb->index;
     printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
     // Handle EOF by limiting count to the filesize
     int amountAlreadyDelivered = fcb->filePointer;
@@ -588,10 +589,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
     { // Read from disk directly to user buffer
         blocksRead = discontinuousPartialRead(fcb->currentBlk, buffer + part1, numBlocksToCopy);
         // Get the location of the new current block
-        for (int i = 0; i < numBlocksToCopy; i++)
-        {
-            fcb->currentBlk = fat[fcb->currentBlk];
-        }
+        fcb->currentBlk = moveBlockIndex(fcb->currentBlk, numBlocksToCopy);
         // Update with the actual value of how much was read
         part2 = blocksRead * B_CHUNK_SIZE;
     }
