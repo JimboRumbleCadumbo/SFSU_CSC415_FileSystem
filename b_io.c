@@ -693,9 +693,9 @@ int b_close(b_io_fd fd)
     }
     if (fcb->fileSize > 0 && fcb->directoryEntry != NULL)
     {
-        fcb->directoryEntry;
-        fcb->directoryEntry->size = fcb->fileSize;
-        fcb->directoryEntry->timeModified = time(NULL);
+        DE *paDE = fcb->directoryEntry;
+        (paDE+fcb->deIndex)->size = fcb->fileSize;
+        (paDE+fcb->deIndex)->timeModified = time(NULL);
 
         printf("DE name: %s\n", fcb->directoryEntry->name);
         printf("DE location: %d\n", fcb->directoryEntry->location);
