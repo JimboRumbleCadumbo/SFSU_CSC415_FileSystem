@@ -124,6 +124,10 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     printf("Successfully parsed path. \n");
+    if (retParent[index].isDirectory == 1) {
+        printf("Attempted to open file on a directory.\n");
+        return -1;
+    }
     printf("Allocating memory for FCB. \n");
     b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
     if (fcb == NULL)
@@ -160,7 +164,6 @@ b_io_fd b_open(char *filename, int flags)
             fcb->fileSize = 0;
             fcb->index = 0;
             fcb->buflen = 0;
-            fcb->directoryEntry = retParent;
             fcb->deIndex = index;
         }
     }
@@ -264,6 +267,7 @@ b_io_fd b_open(char *filename, int flags)
         return -1;
     }
     printf("Modifying parent directory. \n");
+    fcb->directoryEntry = &retParent[index];
     fcb->fileDescriptor = returnFd;
     fcb->fileSize = retParent[index].size;
     fcb->accessFlags = flags;
@@ -298,8 +302,6 @@ b_io_fd b_open(char *filename, int flags)
         printf("Append flag specified.\n");
         b_seek(returnFd, 0, SEEK_END);
     }
-    freeDir(retParent);
-
     printf("\n[End b_open]\n");
 
     return (returnFd); // all set
@@ -417,7 +419,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
     {
         printf("[Write] File size is 0, allocate a block for it\n");
         fcb->fileLocation = allocateBlocks(1); // Allocate a block for the file;
-        (fcb->directoryEntry + fcb->deIndex)->location = fcb->fileLocation;
+        (fcb->directoryEntry)->location = fcb->fileLocation;
     }
 
     // P0.5:
@@ -693,10 +695,8 @@ int b_close(b_io_fd fd)
     }
     if (fcb->fileSize > 0 && fcb->directoryEntry != NULL)
     {
-        DE *paDE = fcb->directoryEntry;
-        (paDE+fcb->deIndex)->size = fcb->fileSize;
-        (paDE+fcb->deIndex)->timeModified = time(NULL);
-
+        fcb->directoryEntry->size = fcb->fileSize;
+        fcb->directoryEntry->timeModified = time(NULL);
         printf("DE name: %s\n", fcb->directoryEntry->name);
         printf("DE location: %d\n", fcb->directoryEntry->location);
         printf("DE size: %d\n", fcb->directoryEntry->size);
@@ -706,7 +706,6 @@ int b_close(b_io_fd fd)
             printf("Error writing directory entry.\n");
             return -1;
         }
-        freeDir(fcb->directoryEntry);
     }
 
     // Reset the file control block
