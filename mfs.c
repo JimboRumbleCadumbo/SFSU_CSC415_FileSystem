@@ -445,5 +445,24 @@ int fs_delete(char *filename)
         return -1; // Invalid path / parse error / directory already exists
     }
 
+    // Release blocks back to free space
+    if (retParent[index].size > 0) {
+        int numBlocksToRelease = (retParent[index].size + (vcb->blockSize - 1))/vcb->blockSize;
+        if (releaseBlocks(numBlocksToRelease, retParent[index].location) < 0) {
+            printf("Error releasing blocks to free space.\n");
+            freeDir(retParent);
+            return -1;
+        }
+    }
+
+    // Modify the parent directory
+    memset(&retParent[index], 0, sizeof(DE));
+    if (writeDir(retParent) < 0) {
+        printf("Error writing parent directory to disk.\n");
+        freeDir(retParent);
+        return -1;
+    }
+    freeDir(retParent);
+
     return 0;
 }

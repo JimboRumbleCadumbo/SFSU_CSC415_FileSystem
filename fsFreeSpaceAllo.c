@@ -91,6 +91,11 @@ int releaseBlocks(int numToRelease, int startingBlock) {
         printf("Error: Invalid starting block %d\n", startingBlock);
         return -1;
     }
+    
+    // Reset the bytes on disk.
+    char buf[vcb->blockSize];
+    memset(buf, 0, vcb->blockSize);
+    discontinuousWrite(startingBlock, buf);
 
     // Find end of free space chain. 
     int freeSpaceEnd;
