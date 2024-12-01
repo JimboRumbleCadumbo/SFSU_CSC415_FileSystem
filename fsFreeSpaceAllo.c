@@ -87,7 +87,7 @@ int allocateBlocks(int numBlocks) {
 int releaseBlocks(int numToRelease, int startingBlock) {
     printf("Releasing %d blocks starting from block %d...\n", numToRelease, startingBlock);
 
-     if (startingBlock < 0 || startingBlock >= vcb->numBlocks) {
+    if (startingBlock < 0 || startingBlock >= vcb->numBlocks) {
         printf("Error: Invalid starting block %d\n", startingBlock);
         return -1;
     }
@@ -100,6 +100,7 @@ int releaseBlocks(int numToRelease, int startingBlock) {
         currentBlock = fat[currentBlock];
     }
     freeSpaceEnd = currentBlock;
+
 
     // Set the end of the free space chain to point to the starting block
     // Since a chain with a valid end is already passed through,

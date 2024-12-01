@@ -39,7 +39,6 @@ int parsePath(char *path, DE **retParent, int *index, char *lastElemName) {
     if (path == NULL || strlen(path) == 0) {
         return -1;
     }
-
     // Check for relative vs absolute path
     DE *start;
     if (path[0] == '/') {
