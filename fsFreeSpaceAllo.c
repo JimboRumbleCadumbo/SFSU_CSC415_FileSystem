@@ -29,14 +29,9 @@
  */
 int allocateBlocks(int numBlocks) {
 
-    printf("Allocating %d blocks...\n", numBlocks);
-
     int currentBlock = vcb->freeSpaceLoc;
     int startBlock = currentBlock;
-
-    printf("vcb->freeSpaceLoc = %d, vcb->numBlocks = %d\n", vcb->freeSpaceLoc, vcb->numBlocks);
-
-
+    
     if (vcb->numBlocks < numBlocks) {
         printf("Not enough free space. Required: %d, Available: %d\n", numBlocks, vcb->numBlocks);
         return END_OF_CHAIN;
@@ -51,7 +46,6 @@ int allocateBlocks(int numBlocks) {
         int nextFreeBlock = fat[currentBlock];
         
         if (i == numBlocks - 1) {
-            printf("Setting end of chain to %d\n", currentBlock);
             fat[currentBlock] = END_OF_CHAIN;
             vcb->freeSpaceLoc = nextFreeBlock;
         } 
@@ -64,7 +58,6 @@ int allocateBlocks(int numBlocks) {
             currentBlock = nextFreeBlock;
         }
     }
-    printf("Done. Start block of the allocated chain: %d\n", startBlock);
 
     if (writeFAT() < 0) {
         printf("Error writing FAT\n");
@@ -85,7 +78,6 @@ int allocateBlocks(int numBlocks) {
  * @return The first free space location in the VCB
  */
 int releaseBlocks(int numToRelease, int startingBlock) {
-    printf("Releasing %d blocks starting from block %d...\n", numToRelease, startingBlock);
 
     if (startingBlock < 0 || startingBlock >= vcb->numBlocks) {
         printf("Error: Invalid starting block %d\n", startingBlock);
@@ -112,8 +104,6 @@ int releaseBlocks(int numToRelease, int startingBlock) {
     // the free space chain extends to add the blocks.
     fat[freeSpaceEnd] = startingBlock;
 
-
-    printf("New start of free space: %d\n", vcb->freeSpaceLoc);
 
     if (writeFAT() < 0) {
         printf("Error writing FAT\n");

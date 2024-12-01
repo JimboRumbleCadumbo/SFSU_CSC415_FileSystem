@@ -49,8 +49,6 @@ char cwdString[MAX_PATH_LENGTH] = "";
  */
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {
-	printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
-
 	int usrSignature = 0x1234ABCD;
 
 	vcb = malloc(blockSize);
@@ -72,12 +70,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		root = createDirectory(50, NULL);
 
 		LBAwrite(vcb, 1, 0);
-		printf("\nDisk Initialized... \n\n");
 	}
 	else
 	{
 		// Retrive data that is already in disk
-		printf("\n\nThe disk was already initialized...Reading table & rootDir from disk... \n\n");
 
 		int numBlocksInFat = (vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1) / vcb->blockSize;
 		fat = malloc(numBlocksInFat * vcb->blockSize);

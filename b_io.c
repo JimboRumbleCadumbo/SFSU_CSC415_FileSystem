@@ -109,13 +109,11 @@ b_io_fd b_getFCB()
  */
 b_io_fd b_open(char *filename, int flags)
 {
-    printf("\n[In b_open]\n");
     b_io_fd returnFd;
 
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
-    printf("Parsing path. \n");
     int result = parsePath(filename, &retParent, &index, lastElemName);
     if (result < 0)
     {
@@ -128,8 +126,6 @@ b_io_fd b_open(char *filename, int flags)
         freeDir(retParent);
         return -1;
     }
-    printf("Successfully parsed path. \n");
-    printf("Allocating memory for FCB. \n");
     b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
     memset(fcb, 0, sizeof(b_fcb));
     if (fcb == NULL)
@@ -142,21 +138,17 @@ b_io_fd b_open(char *filename, int flags)
     // Create the file if it doesn't exist
     if (flags & O_CREAT)
     {
-        printf("[Create flag specified] \n");
         if (index < 0)
         {
-            printf("File does not already exist. \n");
             index = firstUnusedDirEntry(retParent);
             if (index < 0)
             {
-                printf("Unused DE not found in parent. \n");
+                printf("No unused directory entries in parent directory.\n");
                 freeDir(retParent);
                 free(fcb);
                 fcb = NULL;
                 return -1; // No more unused DEs in the parent
             }
-            printf("Found unused DE #%d in parent directory. \n", index);
-            printf("Populating DE in parent directory. \n");
             strcpy(retParent[index].name, lastElemName);
             retParent[index].size = 0;
             retParent[index].location = 0;
@@ -166,10 +158,9 @@ b_io_fd b_open(char *filename, int flags)
     // Truncate existing file
     if (flags & O_TRUNC)
     {
-        printf("[Truncate flag specified] \n");
         if (index < 0)
         {
-            printf("File does not exist.\n");
+            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -187,10 +178,9 @@ b_io_fd b_open(char *filename, int flags)
     //  File can only do read/seek operations
     if (flags & O_RDONLY)
     {
-        printf("[Read ONLY flag specified] \n");
         if (index < 0)
         {
-            printf("File does not exist.\n");
+            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -201,10 +191,9 @@ b_io_fd b_open(char *filename, int flags)
     //  File can only do write/seek operations
     if (flags & O_WRONLY)
     {
-        printf("[Write ONLY flag specified] \n");
         if (index < 0)
         {
-            printf("File does not exist.\n");
+            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -216,21 +205,17 @@ b_io_fd b_open(char *filename, int flags)
     // File can be read or written to
     if (flags & O_RDWR)
     {
-        printf("[Read/Write flag specified] \n");
         if (index < 0)
         {
-            printf("File does not exist.\n");
+            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
             return -1;
         }
     }
-
-    printf("Getting file control block. \n");
     returnFd = b_getFCB(); // get our own file descriptor
                            // check for error - all used FCB's
-    printf("FCB is %d\n", returnFd);
     if (returnFd < 0)
     {
         printf("All available FCBs are used.\n");
@@ -239,7 +224,6 @@ b_io_fd b_open(char *filename, int flags)
         fcb = NULL;
         return -1;
     }
-    printf("Modifying parent directory. \n");
     fcb->blockSize = vcb->blockSize;
     fcb->currentBlk = retParent[index].location;
     fcb->deIndex = index;
@@ -263,7 +247,6 @@ b_io_fd b_open(char *filename, int flags)
     }
     fcb->buf = buf;
     fcb->buflen = 0;
-    printf("Writing parent directory to disk.\n");
     if (writeDir(retParent) < 1)
     {
         printf("Error writing parent directory.\n");
@@ -277,11 +260,8 @@ b_io_fd b_open(char *filename, int flags)
     fcbArray[returnFd] = *fcb;
     if (flags & O_APPEND)
     {
-        printf("Append flag specified.\n");
         b_seek(returnFd, 0, SEEK_END);
     }
-
-    printf("\n[End b_open]\n");
 
     return (returnFd); // all set
 }
@@ -299,7 +279,6 @@ b_io_fd b_open(char *filename, int flags)
  */
 int b_seek(b_io_fd fd, off_t offset, int whence)
 {
-    printf("\n[In b_seek]\n");
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
@@ -352,8 +331,6 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
     }
     fcb->index = blockOffset;
 
-    printf("\n[End b_seek]\n");
-
     return newPointer; // Return the new file pointer position
 }
 
@@ -369,8 +346,6 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
  */
 int b_write(b_io_fd fd, char *buffer, int count)
 {
-    //printf("\n[In b_write]\n");
-
     // Validate the file descriptor
     if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
     {
@@ -396,7 +371,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
     if (fcb->fileSize == 0)
     {
-        //printf("[Write] File size is 0, allocate a block for it\n");
         fcb->fileLocation = allocateBlocks(1); // Allocate a block for the file;
         (fcb->directoryEntry + fcb->deIndex)->location = fcb->fileLocation;
         fcb->currentBlk = fcb->fileLocation;
@@ -407,7 +381,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // and return.
     if (count < B_CHUNK_SIZE - (fcb->filePointer % B_CHUNK_SIZE))
     {
-        //printf("[P0.5] Supplement bytes in current block...\n");
         memcpy(fcb->buf + (fcb->filePointer % B_CHUNK_SIZE), buffer, count);
         fcb->filePointer += count;
         if (fcb->fileSize < fcb->filePointer)
@@ -426,14 +399,11 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // see if current position needs to extend the chain for the incoming count
     if (excessBytes > 0)
     {
-        //printf("Excess bytes: %d, extending %d blocks...\n", excessBytes,
-               //(excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE);
         extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation);
     }
 
     // p1
     targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
-    //printf("[p1]targetBlock:%d, %d blocks moved\n", targetBlock, fcb->filePointer / B_CHUNK_SIZE);
 
     int existingBytes = fcb->filePointer % B_CHUNK_SIZE;
     p1 = B_CHUNK_SIZE - existingBytes;
@@ -456,7 +426,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     int p2NeededBlocks = count / B_CHUNK_SIZE;
     if (p2NeededBlocks != 0)
     {
-        //printf("p2 needed blocks: %d\n", p2NeededBlocks);
         p2 = p2NeededBlocks * B_CHUNK_SIZE;
         fcb->filePointer += p2;
         if (fcb->fileSize < fcb->filePointer)
@@ -474,7 +443,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     }
 
     // p3
-    //printf("[p3]targetBlock:%d\n", targetBlock);
     int p3Read = discontinuousPartialRead(targetBlock, fcb->buf, 1);
     if (p3Read == -1)
     {
@@ -489,11 +457,8 @@ int b_write(b_io_fd fd, char *buffer, int count)
     }
     fcb->isDirty = 1;
 
-    //printf("Write complete. Bytes written: %d\n", count + p1 + p2);
     time_t now = time(NULL);
     fcb->directoryEntry->timeModified = now;
-
-    //printf("\n[End b_write]\n");
 
     return count + p1 + p2;
 }
@@ -510,7 +475,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
  */
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-    //printf("\n[In b_read]\n");
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
@@ -542,13 +506,9 @@ int b_read(b_io_fd fd, char *buffer, int count)
     int remainingBytesInMyBuffer;
 
     // Calculate bytes available in the buffer
-    //printf("Bytes requested: %d\n", count);
     remainingBytesInMyBuffer = fcb->buflen - fcb->index;
-    //printf("Remaining bytes in my buffer: %d\n", remainingBytesInMyBuffer);
     // Handle EOF by limiting count to the filesize
     int amountAlreadyDelivered = fcb->filePointer;
-    //printf("Amount already delivered: %d\n", amountAlreadyDelivered);
-    //printf("File size: %d\n", fcb->fileSize);
     if ((count + amountAlreadyDelivered) > fcb->fileSize)
     {
         count = fcb->fileSize - amountAlreadyDelivered;
@@ -558,19 +518,16 @@ int b_read(b_io_fd fd, char *buffer, int count)
             return -1;
         }
     }
-    //printf("Bytes requested: %d\n", count);
 
     // part 1 is currently in the buffer and available to satisfy the request
     if (remainingBytesInMyBuffer >= count)
     { // Entire request is satisfied by buffer amount
-        //printf("We can satisfy this request with just part 1.\n");
         part1 = count;
         part2 = 0; // Do not need to load anything else
         part3 = 0;
     }
     else
     { // Give the caller the rest of the buffer & calculate pt2 and 3
-        //printf("We can't satisfy this request with just part 1.\n");
         part1 = remainingBytesInMyBuffer;
         part3 = count - remainingBytesInMyBuffer;
         // If there are blocks we can copy directly to the user's buffer, calculate this
@@ -580,10 +537,6 @@ int b_read(b_io_fd fd, char *buffer, int count)
         // Part3 will be loaded into the intermediary buffer rather than the user's buf directly
         part3 -= part2;
     }
-
-    //printf("Part 1: %d\n", part1);
-    //printf("Part 2: %d\n", part2);
-    //printf("Part 3: %d\n", part3);
 
     if (part1 > 0)
     { // Copy part1 bytes to user buffer and increment internal buffer position
@@ -621,8 +574,6 @@ int b_read(b_io_fd fd, char *buffer, int count)
     bytesReturned = part1 + part2 + part3;
     fcb->filePointer += bytesReturned;
 
-    //printf("\n[End b_read]. Returned %d bytes.\n", bytesReturned);
-
     return bytesReturned;
 }
 
@@ -640,7 +591,6 @@ int b_read(b_io_fd fd, char *buffer, int count)
 int b_close(b_io_fd fd)
 {
     // Check that fd is between 0 and (MAXFCBS-1)
-    printf("\n[In b_close]\n");
     if ((fd < 0) || (fd >= MAXFCBS))
     {
         printf("Invalid file descriptor passed. \n");
@@ -648,7 +598,6 @@ int b_close(b_io_fd fd)
     }
 
     // Get the file control block
-    printf("Getting the FCB. \n");
     b_fcb *fcb = &fcbArray[fd];
 
     // Check if the file is open
@@ -666,7 +615,6 @@ int b_close(b_io_fd fd)
     // Free the buffer
     if (fcb->buf != NULL)
     {
-        printf("Freeing the buffer. \n");
         free(fcb->buf);
         fcb->buf = NULL;
     }
@@ -675,11 +623,6 @@ int b_close(b_io_fd fd)
         DE *paDE = fcb->directoryEntry;
         (paDE+fcb->deIndex)->size = fcb->fileSize;
         (paDE+fcb->deIndex)->timeModified = time(NULL);
-
-        printf("DE name: %s\n", fcb->directoryEntry->name);
-        printf("DE location: %d\n", fcb->directoryEntry->location);
-        printf("DE size: %d\n", fcb->directoryEntry->size);
-
         if (writeDir(fcb->directoryEntry) < 0)
         {
             printf("Error writing directory entry.\n");
@@ -689,14 +632,10 @@ int b_close(b_io_fd fd)
     }
 
     // Reset the file control block
-    printf("Resetting FCB. \n");
     fcb->fileDescriptor = -1;
     fcb->filePointer = 0;
     fcb->fileSize = 0;
     fcb->blockSize = 0;
-
-    printf("\n[End b_close]\n");
-
     return 0; // Success
 }
 
@@ -714,7 +653,6 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     DE *retParent1;
     int index1 = 0;
     char lastElemName1[MAX_NAME_LENGTH];
-    printf("Parsing source path. \n");
     int result1 = parsePath(pathnameSrc, &retParent1, &index1, lastElemName1);
     if (result1 < 0)
     {
@@ -729,16 +667,12 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     DE *retParent2;
     int index2 = 0;
     char lastElemName2[MAX_NAME_LENGTH];
-    printf("Parsing destination path. \n");
     int result2 = parsePath(pathnameDest, &retParent2, &index2, lastElemName2);
     if (result2 < 0)
     {
         printf("Invalid path. \n");
         return -1;
     }
-    printf("Successfully parsed path. \n");
-
-    printf("Loading destination directory. \n");
     DE *destDirectory;
     if(index2 < 0){
         destDirectory = retParent2;
@@ -754,7 +688,6 @@ int b_move(char *pathnameSrc, char *pathnameDest)
         return -1;
     }
 
-    printf("Finding unused directory in the destination. \n");
     int index = firstUnusedDirEntry(destDirectory);
     if (index < 2)
     {
@@ -764,34 +697,24 @@ int b_move(char *pathnameSrc, char *pathnameDest)
         freeDir(retParent2);
         return -1;
     }
-    printf("Populating destination directory entry. index:%d\n", index);
     if(index2 < 0){
         strcpy(destDirectory[index].name, lastElemName2);
     }else{
         strcpy(destDirectory[index].name, retParent1[index1].name);
     }
     
-    printf("File name is now: %s\n", destDirectory[index].name);
     destDirectory[index].isDirectory = 0;
     destDirectory[index].location = retParent1[index1].location;
     destDirectory[index].size = retParent1[index1].size;
     destDirectory[index].timeCreated = retParent1[index1].timeCreated;
     destDirectory[index].timeModified = time(NULL);
 
-    printf("Populated dest. directory entry. Writing dest. directory entry.\n");
     if (writeDir(destDirectory) < 0)
     {
         printf("Error writing destination directory.\n");
         return -1;
     }
-    /*printf("Dumping destination directory after move:\n");
-    for (int i = 0; i < 50; i++)
-    {
-        printf("[%d] name=%s, isDirectory=%d, location=%d, size=%d\n", i,
-               destDirectory[i].name, destDirectory[i].isDirectory,
-               destDirectory[i].location, destDirectory[i].size);
-    }*/
-    printf("Resetting old parent to be unused. index\n");
+    
     retParent1 = loadDir(retParent1);
     strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent1[index1], 0, sizeof(DE));

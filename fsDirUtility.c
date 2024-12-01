@@ -32,26 +32,6 @@ void freeDir (DE *dir) {
     dir = NULL;
 }
 
-/**
- * DE * loadDir(DE *dir)
- * 
- * Description: Loads a directory entry from the disk.
- * 
- * @param dir The directory TO BE read
- * @return The directory that GOT read
- */
-int findPath(DE *dir) {
-    if (dir == NULL) {
-        printf("Error: Invalid argument\n");
-        return -1; // Invalid argument
-    }
-    if (dir->isDirectory != 1) {
-        printf("Error: Not a directory\n");
-        return -1; // Not a directory
-    }
-    // loadDir(dir[1]);
-    return 0;
-}
 DE * loadDir(DE *dir) {
     if (dir == NULL ) {
         printf("Error: Invalid argument\n");
@@ -77,13 +57,6 @@ DE * loadDir(DE *dir) {
         printf("[[Critical]] Failed to read directory\n");
         return NULL;
     }
-
-    //test
-    // for(int i=0;i<10;i++){
-    //     if(strcmp (new[i].name,"")){
-    //         printf("i:%d, %s, size:%d\n",i,new[i].name,new[i].size);
-    //     }
-    // }
     
     return new;
 }

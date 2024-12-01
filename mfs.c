@@ -70,7 +70,6 @@ int fs_mkdir(const char *pathname, mode_t mode)
 
 int fs_rmdir(const char *pathname)
 {
-    printf("Calling fs_rmdir.\n");
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];
@@ -429,7 +428,6 @@ int fs_stat(const char *path, struct fs_stat *buf)
 
 int fs_delete(char *filename)
 { // removes a file
-    printf("Calling fs_delete.\n");
     DE *retParent;
     int index = 0;
     char lastElemName[MAX_NAME_LENGTH];

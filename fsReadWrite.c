@@ -30,7 +30,6 @@
  * @return The number of blocks WRITTEN into the FAT table
  */
 int discontinuousWrite(int startingBlock, void *buffer) {
-    printf("in discontinuousWrite\n");
     int currentBlock = startingBlock;
     int bytesWritten = 0;
 
@@ -49,8 +48,6 @@ int discontinuousWrite(int startingBlock, void *buffer) {
     LBAwrite(buffer + bytesWritten, 1, currentBlock);
     bytesWritten += vcb->blockSize;
     int blocksWritten = (bytesWritten / vcb->blockSize);
-    printf("bytesWritten: %d\n", bytesWritten);
-    printf("blocksWritten: %d\n", blocksWritten);
     return blocksWritten;
 }
 
@@ -206,7 +203,6 @@ int extendChain(int numBlocksToExtend, int startingBlock){
     }
 
     fat[currentBlock] = vcb->freeSpaceLoc;
-    printf("[extendChain] Extending chain from block %d", vcb->freeSpaceLoc);
     int result = allocateBlocks(numBlocksToExtend);
     if (result < 0) {
         printf("Error allocating blocks.\n");
