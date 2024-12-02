@@ -32,7 +32,7 @@
 int initializeFAT(int blockSize, int numBlocks) {
     // Allocate memory for the FAT
     int totalBlocks = ((numBlocks * sizeof(int)) + (blockSize - 1))/blockSize;
-    totalBlocks;
+    vcb->freeBlocks = vcb->numBlocks - totalBlocks;
     int totalBytes = totalBlocks * blockSize;
     fat = (int *)malloc(totalBytes);
     memset(fat, 0, totalBytes);

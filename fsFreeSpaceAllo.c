@@ -37,7 +37,7 @@ int allocateBlocks(int numBlocks) {
         return END_OF_CHAIN;
     }
 
-    if (vcb->freeSpaceLoc == vcb->numBlocks) {
+    if (vcb->freeBlocks == 0) {
         printf("No more disc space.\n");
         return END_OF_CHAIN;
     }
@@ -48,6 +48,7 @@ int allocateBlocks(int numBlocks) {
         if (i == numBlocks - 1) {
             fat[currentBlock] = END_OF_CHAIN;
             vcb->freeSpaceLoc = nextFreeBlock;
+            vcb->freeBlocks--;
         } 
         else {
             if (currentBlock == END_OF_CHAIN) {
@@ -56,8 +57,10 @@ int allocateBlocks(int numBlocks) {
             }
             fat[currentBlock] = nextFreeBlock;
             currentBlock = nextFreeBlock;
+            vcb->freeBlocks--;
         }
     }
+
 
     if (writeFAT() < 0) {
         printf("Error writing FAT\n");
@@ -103,6 +106,7 @@ int releaseBlocks(int numToRelease, int startingBlock) {
     // Since a chain with a valid end is already passed through,
     // the free space chain extends to add the blocks.
     fat[freeSpaceEnd] = startingBlock;
+    vcb->freeBlocks -= numToRelease;
 
 
     if (writeFAT() < 0) {
