@@ -372,7 +372,6 @@ int cmd_mv (int argcnt, char *argvec[])
 	} else {
 		return b_move(argvec[1], argvec[2]);
 	}
-	// **** TODO ****  For you to implement	
 #endif
 	return 0;
 	}

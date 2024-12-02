@@ -53,10 +53,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 	vcb = malloc(blockSize);
 
-	LBAread(vcb, 1, 0);
-
 	if (vcb == NULL)
 	{
+		printf("[[Critical]] VCB block allocation failed\n");
+		return -1;
+	}
+
+	if (LBAread(vcb, 1, 0) < 0)
+	{
+		printf("[[Critical]] Error occured while initializing system\n");
 		return -1;
 	}
 
@@ -69,13 +74,18 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb->tableLoc = initializeFAT(blockSize, numberOfBlocks);
 		root = createDirectory(50, NULL);
 
-		LBAwrite(vcb, 1, 0);
+		if (LBAwrite(vcb, 1, 0) < 0)
+		{
+			printf("[[Critical]] Error occured while formatting\n");
+			return -1;
+		}
 	}
 	else
 	{
 		// Retrive data that is already in disk
 
-		int numBlocksInFat = (vcb->numBlocks * sizeof(int)) + (vcb->blockSize - 1) / vcb->blockSize;
+		int numBlocksInFat = (vcb->numBlocks * sizeof(int)) 
+							 + (vcb->blockSize - 1) / vcb->blockSize;
 		fat = malloc(numBlocksInFat * vcb->blockSize);
 
 		if (fat == NULL)
@@ -84,7 +94,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 			return -1;
 		}
 
-		LBAread(fat, numBlocksInFat, vcb->tableLoc);
+		if (LBAread(fat, numBlocksInFat, vcb->tableLoc) < 0)
+		{
+			printf("[[Critical]] Error occured while retrieving data from disk\n");
+			return -1;
+		}
 
 		int numBytesInRoot = (sizeof(DE) * 50);
 		int numBlocksInRoot = (numBytesInRoot + (vcb->blockSize - 1)) / vcb->blockSize;
@@ -96,7 +110,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 			return -1;
 		}
 
-		LBAread(root, numBlocksInRoot, vcb->rootLoc);
+		if (LBAread(root, numBlocksInRoot, vcb->rootLoc) < 0)
+		{
+			printf("[[Critical]] Error occured while fetching root directory data\n");
+			return -1;
+		}
 
 		printf("\nRead Complete...... \n\n");
 	}
@@ -104,10 +122,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	int numBytesInDir = (sizeof(DE) * 50);
 	int numBlocksInDir = (numBytesInDir + (vcb->blockSize - 1)) / vcb->blockSize;
 	cwd = malloc(numBlocksInDir * vcb->blockSize);
+
 	if (cwd == NULL)
 	{
 		printf("[[Critical]] Current working directory allocation failed\n");
+		return -1;
 	}
+
 	// Set current working directory to root directory at init
 	cwd = root;
 	char *rootPath = "/";
@@ -124,12 +145,16 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
  */
 void exitFileSystem()
 {
-	LBAwrite(vcb, 1, 0);
+	if (LBAwrite(vcb, 1, 0) < 0)
+	{
+		printf("[[Critical]] Error occured while saving data\n");
+	}
 	free(vcb);
 	vcb = NULL;
 	free(fat);
 	fat = NULL;
-	if (cwd != root) {
+	if (cwd != root)
+	{
 		free(cwd);
 		cwd = NULL;
 	}

@@ -33,11 +33,11 @@ DE * createDirectory(int numEntries, DE *parent) {
     int actualBytes = blocksNeeded * vcb->blockSize;
     DE *newDir;
     newDir = (DE *)malloc(actualBytes);
-    memset(newDir, 0, actualBytes);
-    
     if (newDir == NULL) {
+        printf("[[Critical]] Error occured while creating directory.\n");
         return NULL;
     }
+    memset(newDir, 0, actualBytes);
 
     // Get a location on the FAT for the file
     int location = allocateBlocks(blocksNeeded);
@@ -90,7 +90,8 @@ int writeDir(DE *dir) {
     int blocksWritten = discontinuousWrite(dir->location, dir);
 
     if (blocks != blocksWritten) {
-        printf("[[Critical]] Failed to write/create directory. blocks written: %d out of %d\n", blocksWritten, blocks);
+        printf("[[Critical]] Failed to write/create directory. Blocks written: %d out of %d\n",
+              blocksWritten, blocks);
         return -1;
     }
 

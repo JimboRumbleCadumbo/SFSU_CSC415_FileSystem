@@ -36,7 +36,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     {
         return -1; // Invalid path / parse error / directory already exists
     }
-    
+
     DE *loadedDir = loadDir(retParent);
     if (loadedDir == NULL)
     {
@@ -83,27 +83,25 @@ int fs_rmdir(const char *pathname)
         return -1; // Invalid path / parse error / directory already exists
     }
 
-    if (retParent[index].location == root->location) {
-        printf("[[Critical]] Cannot remove root directory.\n");
+    if (retParent[index].location == root->location)
+    {
         freeDir(retParent);
         return -1;
     }
-    if (retParent[index].location == cwd->location) {
-        printf("[[Critical]] Cannot remove current working directory.\n");
+    if (retParent[index].location == cwd->location)
+    {
         freeDir(retParent);
         return -1;
     }
     DE *target = loadDir(&retParent[index]);
     if (isDirEmpty(target) == 0)
     {
-        printf("[[Critical]] Cannot remove non-empty directory.\n");
         freeDir(retParent);
         return -1;
     }
 
     int blocksToRelease = (target->size + (vcb->blockSize - 1)) / vcb->blockSize;
-    int releaseResult = releaseBlocks(blocksToRelease, target->location);
-    if (releaseResult < 0)
+    if (releaseBlocks(blocksToRelease, target->location) < 0)
     {
         freeDir(retParent);
         freeDir(target);
@@ -111,10 +109,13 @@ int fs_rmdir(const char *pathname)
     }
 
     memset(&retParent[index], 0, sizeof(DE));
-    removeDirectoryEntry(retParent, index);
+    if (removeDirectoryEntry(retParent, index) < 0)
+    {
+        freeDir(retParent);
+        return -1;
+    }
 
-    int writeBackResult = writeDir(retParent);
-    if (writeBackResult < 0)
+    if (writeDir(retParent) < 0)
     {
         freeDir(retParent);
         return -1;
@@ -156,12 +157,11 @@ fdDir *fs_opendir(const char *pathname)
     {
         free(openedDir);
         openedDir = NULL;
-        printf("[fs_opendir]Error loading directory\n");
         return NULL;
     }
 
-    openedDir->directory = loadedDir;   
-    
+    openedDir->directory = loadedDir;
+
     struct fs_diriteminfo *di = (struct fs_diriteminfo *)malloc(sizeof(struct fs_diriteminfo));
     if (di == NULL)
     {
@@ -180,24 +180,24 @@ fdDir *fs_opendir(const char *pathname)
 
 struct fs_diriteminfo *fs_readdir(fdDir *dirp)
 {
-    if (dirp == NULL) {
+    if (dirp == NULL)
+    {
         return NULL;
     }
 
-    while (dirp->dirEntryPosition < ENTRIES_IN_DIR) {
+    while (dirp->dirEntryPosition < ENTRIES_IN_DIR)
+    {
         int pos = dirp->dirEntryPosition;
-        
+
         // Check if the current entry is valid (non-empty name)
-        if (dirp->directory[pos].name[0] != '\0') {
+        if (dirp->directory[pos].name[0] != '\0')
+        {
             // Copy the entry details to `dirp->di`
             strncpy(dirp->di->d_name, dirp->directory[pos].name, sizeof(dirp->di->d_name) - 1);
             dirp->di->d_name[sizeof(dirp->di->d_name) - 1] = '\0';
             dirp->di->d_reclen = sizeof(struct fs_diriteminfo);
             dirp->di->timeCreated = dirp->directory[pos].timeCreated;
             dirp->di->timeModified = dirp->directory[pos].timeModified;
-
-            //test
-            // printf("Name: %s\n, Size: %d\n  ", dirp->di->d_name, dirp->directory[pos].size);
 
             // Advance to the next position for the next call
             dirp->dirEntryPosition++;
@@ -371,7 +371,6 @@ int fs_isDir(char *pathname)
     int result = parsePath(path, &retParent, &index, lastElemName);
     free(path);
     path = NULL;
-    // printf("[fs_isDir]i:%d, %s, size:%d\n",index,retParent[index].name,retParent[index].size);
     if (result < 0 || index < 0 || lastElemName == NULL || retParent == NULL)
     {
         freeDir(retParent);
@@ -400,18 +399,15 @@ int fs_stat(const char *path, struct fs_stat *buf)
     if (result < 0)
     {
         freeDir(retParent);
-        printf("Invalid path\n");
         return -1; // Invalid path
     }
     if (retParent == NULL || lastElemName == NULL || index < 0)
     {
         freeDir(retParent);
-        // printf("Dir does not exist in parent\n");
         return -1; // No parent / no last element name / dir does not exist in parent
     }
-    
+
     buf->st_size = retParent[index].size; // Assumed the size matches d_reclen
-    // printf("[fs_stat]i:%d, %s, size:%d\n",index,retParent[index].name,retParent[index].size);
     buf->st_blksize = vcb->blockSize;
     buf->st_blocks = (buf->st_size + (vcb->blockSize - 1)) / (vcb->blockSize);
 
@@ -444,10 +440,11 @@ int fs_delete(char *filename)
     }
 
     // Release blocks back to free space
-    if (retParent[index].size > 0) {
-        int numBlocksToRelease = (retParent[index].size + (vcb->blockSize - 1))/vcb->blockSize;
-        if (releaseBlocks(numBlocksToRelease, retParent[index].location) < 0) {
-            printf("Error releasing blocks to free space.\n");
+    if (retParent[index].size > 0)
+    {
+        int numBlocksToRelease = (retParent[index].size + (vcb->blockSize - 1)) / vcb->blockSize;
+        if (releaseBlocks(numBlocksToRelease, retParent[index].location) < 0)
+        {
             freeDir(retParent);
             return -1;
         }
@@ -455,8 +452,8 @@ int fs_delete(char *filename)
 
     // Modify the parent directory
     memset(&retParent[index], 0, sizeof(DE));
-    if (writeDir(retParent) < 0) {
-        printf("Error writing parent directory to disk.\n");
+    if (writeDir(retParent) < 0)
+    {
         freeDir(retParent);
         return -1;
     }

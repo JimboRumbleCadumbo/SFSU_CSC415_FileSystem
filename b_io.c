@@ -117,23 +117,23 @@ b_io_fd b_open(char *filename, int flags)
     int result = parsePath(filename, &retParent, &index, lastElemName);
     if (result < 0)
     {
-        printf("Invalid path. \n");
         freeDir(retParent);
         return -1;
     }
-    if(index > 0 && retParent[index].isDirectory){
-        printf("Is not a file. \n");
+    if (index > 0 && retParent[index].isDirectory)
+    {
         freeDir(retParent);
         return -1;
     }
     b_fcb *fcb = (b_fcb *)malloc(sizeof(b_fcb));
-    memset(fcb, 0, sizeof(b_fcb));
     if (fcb == NULL)
     {
+        printf("[[Critical]] Error occured while opening file. \n");
         freeDir(retParent);
-        printf("Failed to allocate memory for fcb.\n");
         return -1;
     }
+    memset(fcb, 0, sizeof(b_fcb));
+
     time_t now = time(NULL);
     // Create the file if it doesn't exist
     if (flags & O_CREAT)
@@ -141,13 +141,12 @@ b_io_fd b_open(char *filename, int flags)
         if (index < 0)
         {
             index = firstUnusedDirEntry(retParent);
-            if (index < 0)
+            if (index < 0) // No more unused DEs in the parent
             {
-                printf("No unused directory entries in parent directory.\n");
                 freeDir(retParent);
                 free(fcb);
                 fcb = NULL;
-                return -1; // No more unused DEs in the parent
+                return -1;
             }
             strcpy(retParent[index].name, lastElemName);
             retParent[index].size = 0;
@@ -158,9 +157,8 @@ b_io_fd b_open(char *filename, int flags)
     // Truncate existing file
     if (flags & O_TRUNC)
     {
-        if (index < 0)
+        if (index < 0) // File not found
         {
-            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -178,9 +176,8 @@ b_io_fd b_open(char *filename, int flags)
     //  File can only do read/seek operations
     if (flags & O_RDONLY)
     {
-        if (index < 0)
+        if (index < 0) // File not found
         {
-            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -191,9 +188,8 @@ b_io_fd b_open(char *filename, int flags)
     //  File can only do write/seek operations
     if (flags & O_WRONLY)
     {
-        if (index < 0)
+        if (index < 0) // File not found
         {
-            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -207,7 +203,6 @@ b_io_fd b_open(char *filename, int flags)
     {
         if (index < 0)
         {
-            printf("File not found.\n");
             freeDir(retParent);
             free(fcb);
             fcb = NULL;
@@ -218,7 +213,6 @@ b_io_fd b_open(char *filename, int flags)
                            // check for error - all used FCB's
     if (returnFd < 0)
     {
-        printf("All available FCBs are used.\n");
         freeDir(retParent);
         free(fcb);
         fcb = NULL;
@@ -235,21 +229,20 @@ b_io_fd b_open(char *filename, int flags)
     fcb->index = 0;
     fcb->isDirty = 0; // Haven't loaded buffer yet.
     char *buf = malloc(B_CHUNK_SIZE);
-    memset(buf, 0, B_CHUNK_SIZE);
-
     if (buf == NULL)
     {
-        printf("Error allocating memory to buffer.\n");
+        printf("[[Critical]] Error occured while opening file. \n");
         freeDir(retParent);
         free(fcb);
         fcb = NULL;
         return -1;
     }
+    memset(buf, 0, B_CHUNK_SIZE);
+
     fcb->buf = buf;
     fcb->buflen = 0;
     if (writeDir(retParent) < 1)
     {
-        printf("Error writing parent directory.\n");
         free(buf);
         buf = NULL;
         freeDir(retParent);
@@ -327,6 +320,7 @@ int b_seek(b_io_fd fd, off_t offset, int whence)
     fcb->buflen = LBAread(fcb->buf, 1, blockNumber);
     if (fcb->buflen < 0)
     {
+        printf("[[Critical]] Error occured while reading file\n");
         return -1; // Error reading file
     }
     fcb->index = blockOffset;
@@ -349,7 +343,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // Validate the file descriptor
     if (fd < 0 || fd >= MAXFCBS || fcbArray[fd].buf == NULL)
     {
-        printf("Invalid file descriptor or buffer.\n");
         return -1; // Invalid fd
     }
 
@@ -358,14 +351,14 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // Check if the file is read-only
     if (fcb->accessFlags & O_RDONLY || fcb->accessFlags & O_RDWR)
     {
-        printf("Error: File is read-only. Cannot write to it.\n");
+        printf("[[Critical]] File is read-only. Cannot write to it.\n");
         return -1;
     }
 
     // Check if the file is writable
     if (fcb->fileDescriptor < 0)
     {
-        printf("File is not open or writable.\n");
+        printf("[[Critical]] File is not writable.\n");
         return -1;
     }
 
@@ -399,10 +392,15 @@ int b_write(b_io_fd fd, char *buffer, int count)
     // see if current position needs to extend the chain for the incoming count
     if (excessBytes > 0)
     {
-        extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation);
+        if (extendChain((excessBytes + B_CHUNK_SIZE - 1) / B_CHUNK_SIZE, fcb->fileLocation) < 0)
+        {
+            return -1;
+        }
     }
 
-    // p1
+    // p1:
+    // Fill up all the available bytes in the current block, and write it
+    // to disk
     targetBlock = moveBlockIndex(fcb->fileLocation, fcb->filePointer / B_CHUNK_SIZE);
 
     int existingBytes = fcb->filePointer % B_CHUNK_SIZE;
@@ -418,11 +416,13 @@ int b_write(b_io_fd fd, char *buffer, int count)
     int p1Write = discontinuousPartialWrite(targetBlock, fcb->buf, 1);
     if (p1Write == -1)
     {
-        printf("[p1] disc-Write Failed\n");
         return -1;
     }
     targetBlock = moveBlockIndex(targetBlock, 1);
-    // p2
+
+    // p2:
+    // Calculate how many blocks are needed to store the remaining, and write
+    // the blocks to disk at once
     int p2NeededBlocks = count / B_CHUNK_SIZE;
     if (p2NeededBlocks != 0)
     {
@@ -437,16 +437,16 @@ int b_write(b_io_fd fd, char *buffer, int count)
         int p2Write = discontinuousPartialWrite(targetBlock, buffer + p1, p2NeededBlocks);
         if (p2Write == -1)
         {
-            printf("[p2] disc-Write Failed\n");
             return -1;
         }
     }
 
-    // p3
+    // p3:
+    // Write the remaining bytes left, based on the results from p1 and p2.
+    // Instead of writing to disk, we make the block dirty and save it for close
     int p3Read = discontinuousPartialRead(targetBlock, fcb->buf, 1);
     if (p3Read == -1)
     {
-        printf("[p3] disc-Read Failed\n");
         return -1;
     }
     memcpy(fcb->buf, buffer + p1 + p2, count);
@@ -487,14 +487,13 @@ int b_read(b_io_fd fd, char *buffer, int count)
     // Check if the file is write-only
     if (fcb->accessFlags & O_WRONLY)
     {
-        printf("Error: File is write-only. Cannot read from it.\n");
+        printf("[[Critical]] File is write-only. Cannot read from it.\n");
         return -1;
     }
 
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
     {
-        printf("Invalid file descriptor.\n");
         return -1; // File not open
     }
 
@@ -514,7 +513,6 @@ int b_read(b_io_fd fd, char *buffer, int count)
         count = fcb->fileSize - amountAlreadyDelivered;
         if (count < 0)
         {
-            printf("Error: negative count\n");
             return -1;
         }
     }
@@ -530,11 +528,13 @@ int b_read(b_io_fd fd, char *buffer, int count)
     { // Give the caller the rest of the buffer & calculate pt2 and 3
         part1 = remainingBytesInMyBuffer;
         part3 = count - remainingBytesInMyBuffer;
-        // If there are blocks we can copy directly to the user's buffer, calculate this
+        // If there are blocks we can copy directly to the user's buffer,
+        // calculate this
         numBlocksToCopy = part3 / B_CHUNK_SIZE;
         part2 = numBlocksToCopy * B_CHUNK_SIZE;
         // Set part3 to the remaining bytes left to copy
-        // Part3 will be loaded into the intermediary buffer rather than the user's buf directly
+        // Part3 will be loaded into the intermediary buffer rather than the
+        // user's buf directly
         part3 -= part2;
     }
 
@@ -593,7 +593,6 @@ int b_close(b_io_fd fd)
     // Check that fd is between 0 and (MAXFCBS-1)
     if ((fd < 0) || (fd >= MAXFCBS))
     {
-        printf("Invalid file descriptor passed. \n");
         return -1; // Invalid file descriptor
     }
 
@@ -603,7 +602,6 @@ int b_close(b_io_fd fd)
     // Check if the file is open
     if (fcb->fileDescriptor == -1)
     {
-        printf("File is not open. \n");
         return -1; // File not open
     }
     if (fcb->isDirty == 1)
@@ -621,11 +619,10 @@ int b_close(b_io_fd fd)
     if (fcb->fileSize > 0 && fcb->directoryEntry != NULL)
     {
         DE *paDE = fcb->directoryEntry;
-        (paDE+fcb->deIndex)->size = fcb->fileSize;
-        (paDE+fcb->deIndex)->timeModified = time(NULL);
+        (paDE + fcb->deIndex)->size = fcb->fileSize;
+        (paDE + fcb->deIndex)->timeModified = time(NULL);
         if (writeDir(fcb->directoryEntry) < 0)
         {
-            printf("Error writing directory entry.\n");
             return -1;
         }
         freeDir(fcb->directoryEntry);
@@ -656,12 +653,17 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     int result1 = parsePath(pathnameSrc, &retParent1, &index1, lastElemName1);
     if (result1 < 0)
     {
-        printf("Invalid path. \n");
+        printf("[[Critical]] Insufficient parameters. \n");
         return -1;
     }
-    if (index1 < 0 || retParent1[index1].isDirectory != 0)
+    if (index1 < 0)
     {
-        printf("File does not exist in the specified path.\n");
+        printf("[[Critical]] Target file does not exist.\n");
+        return -1;
+    }
+    if (retParent1[index1].isDirectory != 0)
+    {
+        printf("[[Critical]] Cannot move a directory.\n");
         return -1;
     }
     DE *retParent2;
@@ -670,19 +672,22 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     int result2 = parsePath(pathnameDest, &retParent2, &index2, lastElemName2);
     if (result2 < 0)
     {
-        printf("Invalid path. \n");
+        printf("[[Critical]] Destination is empty. \n");
         return -1;
     }
     DE *destDirectory;
-    if(index2 < 0){
+    if (index2 < 0)
+    {
         destDirectory = retParent2;
-    }else{
+    }
+    else
+    {
         destDirectory = loadDir(&retParent2[index2]);
     }
-    
+
     if (destDirectory == NULL)
     {
-        printf("Error loading dest directory.\n");
+        printf("[[Critical]] Invalid destination path. \n");
         freeDir(retParent1);
         freeDir(retParent2);
         return -1;
@@ -691,18 +696,20 @@ int b_move(char *pathnameSrc, char *pathnameDest)
     int index = firstUnusedDirEntry(destDirectory);
     if (index < 2)
     {
-        printf("Error finding unused directory entry.\n");
         freeDir(destDirectory);
         freeDir(retParent1);
         freeDir(retParent2);
         return -1;
     }
-    if(index2 < 0){
+    if (index2 < 0)
+    {
         strcpy(destDirectory[index].name, lastElemName2);
-    }else{
+    }
+    else
+    {
         strcpy(destDirectory[index].name, retParent1[index1].name);
     }
-    
+
     destDirectory[index].isDirectory = 0;
     destDirectory[index].location = retParent1[index1].location;
     destDirectory[index].size = retParent1[index1].size;
@@ -711,20 +718,18 @@ int b_move(char *pathnameSrc, char *pathnameDest)
 
     if (writeDir(destDirectory) < 0)
     {
-        printf("Error writing destination directory.\n");
         return -1;
     }
-    
+
     retParent1 = loadDir(retParent1);
     strncpy(retParent1[index1].name, "\0", MAX_NAME_LENGTH);
     memset(&retParent1[index1], 0, sizeof(DE));
 
     if (writeDir(retParent1) < 0)
     {
-        printf("Error writing source directory.\n");
         return -1;
     }
-    
+
     if (retParent2 != destDirectory && retParent2 != retParent1)
     {
         freeDir(retParent2);
