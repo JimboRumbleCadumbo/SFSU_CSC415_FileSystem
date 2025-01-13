@@ -1,5 +1,30 @@
-# CSC415 Group Term Assignment - File System
+# SFSU_CSC415_FileSystem
+This is the file system project for SFSU's CSC415 Operating System class.
 
+### Warning to Students
+This project is **NOT** meant to be used as a reference for the file system project.
+Any form of copying or modifying code from this project is **STRONGLY CONDEMNED**.
+
+If you are taking this class, please take your time and effort to understand the concepts and build your own file system from scratch.
+Becasue that's how we did it.
+
+## Project Description
+This project is a FAT format file system that is built on top of a virtual storage. 
+Similar to a Linux terminal, the user can create, read, write, and delete files and directories.
+
+To run the program, simply do "make run", and the program will start.
+If wish to reset to original state, do "make sampleclean" and then "make run".
+
+## Credits
+This project was made possible by these amazing people:
+- Yu-Ming Chen
+- Ria Thakker
+- Yuquan Xu 
+- Rishita Meharishi
+
+Special thanks to the coolest, chillest Professor Bierman.
+----------------------------------------------------------------------------------------------------
+# CSC415 Group Term Assignment - File System
 This is a GROUP assignment written in C.  Only one person on the team needs to submit the project.
 
 **Assignment Purpose and Learning Outcomes:**
